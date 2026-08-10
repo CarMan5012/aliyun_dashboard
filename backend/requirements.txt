@@ -1,0 +1,14 @@
+fastapi==0.109.2
+uvicorn==0.27.1
+sqlalchemy==2.0.25
+pymysql==1.1.0
+alibabacloud_tea_openapi
+alibabacloud_ecs20140526
+alibabacloud_vpc20160428
+alibabacloud_domain20180129
+alibabacloud_cas20200407
+pydantic==2.6.1
+pydantic-settings==2.1.0
+cryptography==42.0.2
+celery==5.3.6
+redis==5.0.1

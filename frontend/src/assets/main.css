@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 全局基础 (默认明亮主题) ── */
+
+body {
+  margin: 0;
+  font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ── 暗黑主题全局背景与文本 ── */
+.dark body {
+  background: radial-gradient(circle at 50% 0%, #151e3d 0%, #080b16 70%);
+  background-attachment: fixed;
+  background-color: #080b16;
+  color: #f1f5f9;
+}
+
+/* ── 暗色/明亮定制滚动条 ── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(8, 12, 24, 0.05);
+}
+.dark ::-webkit-scrollbar-track {
+  background: rgba(8, 12, 24, 0.3);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+/* ── 动画效果 ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-fade-up {
+  animation: fadeUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.anim-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ── Naive UI 全局暗黑模式适配（消除任何数据行/表头白块背景） ── */
+.dark .n-data-table {
+  background-color: transparent !important;
+}
+
+.dark .n-data-table .n-data-table-wrapper {
+  background-color: transparent !important;
+}
+
+.dark .n-data-table .n-data-table-th {
+  color: #94a3b8 !important;
+  background-color: #111827 !important;
+  border-bottom-color: rgba(51, 65, 85, 0.5) !important;
+}
+
+.dark .n-data-table .n-data-table-td {
+  color: #cbd5e1 !important;
+  background-color: #111827 !important;
+  border-bottom-color: rgba(51, 65, 85, 0.35) !important;
+}
+
+.dark .n-data-table .n-data-table-tr:hover .n-data-table-td {
+  background-color: #1f2937 !important;
+}
+
+.dark .n-card {
+  background-color: #111827 !important;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .n-popover,
+.dark .n-dropdown-menu,
+.dark .n-modal,
+.dark .n-drawer,
+.dark .n-base-select-menu {
+  background-color: #111827 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #1f2937 !important;
+}

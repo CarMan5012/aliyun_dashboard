@@ -1,0 +1,32 @@
+# Environment variables
+.env
+
+# Node.js
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+backend/__pycache__/
+backend/app/__pycache__/
+
+# Database / SQLite
+*.sqlite3
+*.db
+backend/app.db
+data/
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.playwright-cli/
