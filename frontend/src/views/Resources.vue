@@ -1,42 +1,30 @@
 <template>
   <div class="space-y-4 asset-shell">
         <!-- 头部视图 -->
-        <section class="flex flex-col xl:flex-row xl:justify-between xl:items-center gap-3 bg-white/90 dark:bg-cardDark/90 border border-slate-200/80 dark:border-slate-700/70 px-4 py-3.5 rounded-lg">
-          <div class="flex items-center gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">云资产中心</h1>
-                <span class="asset-count">{{ activeResourceCount }} 条</span>
-              </div>
-              <p class="mt-0.5 text-xs leading-4 text-slate-500 dark:text-slate-400 font-medium">
-                {{ accountStore.activeAccount }} · {{ activeTab }} 资源
-              </p>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white/90 dark:bg-cardDark/90 border border-slate-200/80 dark:border-slate-700/70 px-4 py-3.5 rounded-lg shadow-sm">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">云资产中心</h1>
+              <span class="asset-count">{{ activeResourceCount }} 条</span>
             </div>
+            <p class="mt-0.5 text-xs leading-4 text-slate-500 dark:text-slate-400 font-medium">
+              {{ accountStore.activeAccount }} · {{ activeTab }} 资源
+            </p>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2.5">
+          <div class="flex items-center gap-2.5 mt-2 sm:mt-0">
             <n-input
               v-model:value="searchQuery"
               size="medium"
-              placeholder="快速搜索名称/IP/域名..."
+              placeholder="过滤表格..."
               clearable
-              style="width: 220px"
+              style="width: 180px"
               class="rounded-lg"
             >
               <template #prefix>
                 <Icon icon="lucide:search" class="text-slate-400" />
               </template>
             </n-input>
-            <div class="filter-control flex items-center gap-2">
-              <span class="text-xs font-medium text-slate-500 dark:text-slate-400">账号</span>
-              <n-select
-                :value="accountStore.activeAccountId"
-                :options="accountOptions"
-                size="medium"
-                style="width: 200px"
-                @update:value="onAccountFilter"
-              />
-            </div>
             <n-popover trigger="click" placement="bottom-end" width="200">
               <template #trigger>
                 <n-button size="medium" secondary>
@@ -54,7 +42,7 @@
               </div>
             </n-popover>
           </div>
-        </section>
+        </div>
 
         <!-- 资源 Tabs 区 -->
         <section class="resource-panel bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-4">
