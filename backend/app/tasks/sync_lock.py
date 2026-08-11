@@ -18,15 +18,15 @@ def get_redis_client():
 
 import threading
 
-local_account_locks: dict[int, threading.Lock] = {}
+local_account_locks: dict[str, threading.Lock] = {}
 local_locks_guard = threading.Lock()
 
 def get_local_lock(account_id: int | str) -> threading.Lock:
-    acc_id_int = int(account_id)
+    acc_id_str = str(account_id)
     with local_locks_guard:
-        if acc_id_int not in local_account_locks:
-            local_account_locks[acc_id_int] = threading.Lock()
-        return local_account_locks[acc_id_int]
+        if acc_id_str not in local_account_locks:
+            local_account_locks[acc_id_str] = threading.Lock()
+        return local_account_locks[acc_id_str]
 
 class RedisInfrastructureError(Exception):
     """Redis 基础设施网络/连接故障异常"""
@@ -34,7 +34,7 @@ class RedisInfrastructureError(Exception):
 
 class AccountSyncLock:
     def __init__(self, account_id: int | str, timeout: int = 1000):
-        self.account_id = int(account_id)
+        self.account_id = str(account_id)
         self.lock_key = f"sync_lock:account:{account_id}"
         self.task_key = f"sync_task_id:account:{account_id}"
         self.timeout = timeout
