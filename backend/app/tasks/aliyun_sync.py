@@ -865,49 +865,6 @@ def sync_all_accounts_task():
         logger.info(f"全局资源同步异步任务完成，状态: {status_str}")
     return result
 
-@celery_app.task(name="app.tasks.aliyun_sync.check_and_trigger_sync_task")
-def check_and_trigger_sync_task():
-    """根据云账号自动同步配置与退避状态，定期检测并触发同步"""
-    logger.info("检测是否需要触发定时自动同步...")
-    db = SessionLocal()
-    try:
-        accounts = db.query(CloudAccount).all()
-        now = datetime.datetime.now()
-        for acc in accounts:
-            if acc.sync_interval is None or acc.sync_interval <= 0:
-                continue
-            
-            # 1. 检查退避冷却标识
-            if AccountCooldown.is_in_cooldown(acc.id):
-                logger.info(f"账号 [{acc.account_alias}] 处于失败退避冷却中，跳过本轮定时触发。")
-                continue
-                
-            # 2. 检查是否在进行同步
-            running_task = AccountSyncLock.get_running_task_id(acc.id)
-            if running_task:
-                logger.info(f"账号 [{acc.account_alias}] 正在执行任务 {running_task}，跳过定时重复投递。")
-                continue
-            
-            need_sync = False
-            if acc.last_synced_at is None:
-                need_sync = True
-            else:
-                last_synced = acc.last_synced_at.replace(tzinfo=None) if acc.last_synced_at.tzinfo else acc.last_synced_at
-                elapsed = now.replace(tzinfo=None) - last_synced
-                if elapsed.total_seconds() >= acc.sync_interval * 3600:
-                    need_sync = True
-            
-            if need_sync:
-                logger.info(f"账号 [{acc.account_alias}] 达到同步周期（{acc.sync_interval}小时），触发异步同步。")
-                countdown = ((acc.id - 1) % 6) * 10
-                sync_single_account_task.apply_async(args=[acc.id], countdown=countdown)
-        return "Check completed"
-    except Exception as e:
-        logger.error(f"定时同步检测任务失败: {e}")
-        raise e
-    finally:
-        db.close()
-
 
 @celery_app.task(name="app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task")
 def cron_sync_accounts_by_interval_task(target_interval: int):
