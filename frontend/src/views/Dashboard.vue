@@ -19,13 +19,87 @@
           </div>
         </div>
 
-        <!-- 四个指标统计卡片 -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- 指标统计卡片 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard title="云服务器 ECS" :value="resourceStore.ecsList.length" icon="lucide:server" iconColor="text-primary" />
           <StatCard title="弹性公网 IP" :value="resourceStore.eipList.length" icon="lucide:globe" iconColor="text-indigo-500" />
           <StatCard title="域名资产" :value="resourceStore.domainList.length" icon="lucide:link-2" iconColor="text-success" />
           <StatCard title="SSL 证书" :value="resourceStore.sslList.length" icon="lucide:shield-check" iconColor="text-amber-500" />
+          <StatCard title="API 请求次数" :value="resourceStore.apiCallStats.week_total" icon="lucide:activity" iconColor="text-sky-500" />
         </div>
+
+        <!-- 阿里云 API 调用请求监控统计面板 -->
+        <section class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-5 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
+                <Icon icon="lucide:activity" :width="15" class="text-sky-500" />
+                阿里云 API 请求监控统计
+              </h3>
+              <p class="mt-1 text-[10.5px] text-slate-400 dark:text-slate-500">自动记录后台同步任务发起阿里云 OpenAPI/SDK 请求调用的近 7 天分布与趋势</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
+                实时自动汇总
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- 统计概览 1: 近一周 -->
+            <div class="rounded-lg border border-slate-200/80 dark:border-slate-700/70 bg-gradient-to-br from-blue-50/50 to-indigo-50/30 dark:from-slate-900/40 dark:to-slate-900/20 p-4">
+              <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+                <span>近一周总调用量 (7天)</span>
+                <Icon icon="lucide:calendar-range" :width="15" class="text-blue-500" />
+              </div>
+              <div class="mt-2 text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100 font-mono">
+                {{ resourceStore.apiCallStats.week_total.toLocaleString() }} <span class="text-xs font-normal text-slate-500">次</span>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                阿里云 SDK/OpenAPI 请求累计触发
+              </div>
+            </div>
+
+            <!-- 统计概览 2: 今日 vs 昨日 -->
+            <div class="rounded-lg border border-slate-200/80 dark:border-slate-700/70 bg-gradient-to-br from-emerald-50/50 to-teal-50/30 dark:from-slate-900/40 dark:to-slate-900/20 p-4">
+              <div class="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs font-medium">
+                <span>今日 / 昨日对比</span>
+                <Icon icon="lucide:clock" :width="15" class="text-emerald-500" />
+              </div>
+              <div class="mt-2 flex items-baseline gap-3">
+                <div class="text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+                  {{ resourceStore.apiCallStats.today_total.toLocaleString() }} <span class="text-xs font-normal text-slate-500">今日</span>
+                </div>
+                <div class="text-sm font-semibold text-slate-500 dark:text-slate-400 font-mono">
+                  / {{ resourceStore.apiCallStats.yesterday_total.toLocaleString() }} <span class="text-xs font-normal text-slate-500">昨日</span>
+                </div>
+              </div>
+              <div class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                今日 0:00 至今新增请求
+              </div>
+            </div>
+
+            <!-- 统计概览 3: 按服务分类分布 -->
+            <div class="rounded-lg border border-slate-200/80 dark:border-slate-700/70 bg-slate-50/70 dark:bg-slate-900/35 p-3.5 flex flex-col justify-between">
+              <div class="text-xs font-medium text-slate-600 dark:text-slate-300 mb-2">按服务分类调用占比</div>
+              <div class="space-y-2">
+                <div v-for="(val, sKey) in resourceStore.apiCallStats.by_service" :key="sKey" class="flex items-center justify-between text-[11px]">
+                  <span class="text-slate-500 dark:text-slate-400 font-medium">{{ getServiceName(sKey) }}</span>
+                  <div class="flex items-center gap-2">
+                    <div class="w-24 bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        class="h-full rounded-full transition-all duration-500"
+                        :class="getServiceBarColor(sKey)"
+                        :style="{ width: getServicePercent(val) + '%' }"
+                      ></div>
+                    </div>
+                    <span class="font-mono text-slate-700 dark:text-slate-300 w-10 text-right">{{ val }}次</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         <section class="account-sync-overview bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-5">
           <div class="flex items-start justify-between gap-4 mb-4">
@@ -400,6 +474,31 @@ function getTimelineType(status: string): 'success' | 'warning' | 'error' | 'inf
   if (status === 'already_running') return 'info'
   if (status === 'unknown') return 'default'
   return 'info'
+}
+
+function getServiceName(key: string | number): string {
+  const map: Record<string, string> = {
+    ECS: '云服务器 ECS',
+    EIP: '弹性公网 IP',
+    Domain: '域名资产',
+    SSL: 'SSL 证书'
+  }
+  return map[String(key)] || String(key)
+}
+
+function getServiceBarColor(key: string | number): string {
+  const map: Record<string, string> = {
+    ECS: 'bg-blue-500',
+    EIP: 'bg-indigo-500',
+    Domain: 'bg-emerald-500',
+    SSL: 'bg-amber-500'
+  }
+  return map[String(key)] || 'bg-blue-500'
+}
+
+function getServicePercent(val: number): number {
+  const total = resourceStore.apiCallStats.week_total || 1
+  return Math.min(100, Math.round((val / total) * 100))
 }
 </script>
 

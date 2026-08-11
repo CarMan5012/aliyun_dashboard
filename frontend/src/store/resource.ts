@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { fetchResources, searchResources, fetchDbStatus } from '@/api'
-import type { ResourceItem } from '@/api'
+import { fetchResources, searchResources, fetchDbStatus, fetchApiCallStats } from '@/api'
+import type { ResourceItem, ApiCallStats } from '@/api'
 import { useAccountStore } from './account'
 import router from '@/router'
 
@@ -87,7 +87,8 @@ export const useResourceStore = defineStore('resource', () => {
         loadResourcesByType('EIP'),
         loadResourcesByType('Domain'),
         loadResourcesByType('SSL'),
-        checkDbEmpty()
+        checkDbEmpty(),
+        loadApiCallStats()
       ])
     } finally {
       loading.value = false
@@ -165,6 +166,29 @@ export const useResourceStore = defineStore('resource', () => {
     return sslList.value
   })
 
+  const apiCallStats = ref<ApiCallStats>({
+    week_total: 0,
+    today_total: 0,
+    yesterday_total: 0,
+    by_service: {
+      ECS: 0,
+      EIP: 0,
+      Domain: 0,
+      SSL: 0
+    }
+  })
+
+  async function loadApiCallStats() {
+    try {
+      const stats = await fetchApiCallStats()
+      if (stats) {
+        apiCallStats.value = stats
+      }
+    } catch (e) {
+      console.error('Failed to load API call stats:', e)
+    }
+  }
+
   return {
     ecsList,
     eipList,
@@ -174,6 +198,8 @@ export const useResourceStore = defineStore('resource', () => {
     loading,
     isDbEmpty,
     dbHealthState,
+    apiCallStats,
+    loadApiCallStats,
     searchKeyword,
     searchResults,
     isSearchMode,
@@ -193,3 +219,4 @@ export const useResourceStore = defineStore('resource', () => {
     currentSsl,
   }
 })
+

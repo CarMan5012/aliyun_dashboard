@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.schemas.resource import ResponseModel, DbStatusResponse
 from app.crud import crud_resource
-from app.tasks.aliyun_sync import sync_all_accounts_task
+from app.tasks.aliyun_sync import sync_all_accounts_task, get_api_call_stats
 
 router = APIRouter()
 
@@ -180,3 +180,22 @@ def api_get_task_status(
         "result": result_data,
         "traceback": traceback_data
     }
+
+
+@router.get("/api-call-stats")
+def api_get_api_call_stats(db: Session = Depends(get_db)):
+    """
+    返回阿里云 API 调用次数统计数据（近一周、今日、昨日、服务分类分布）
+    """
+    try:
+        stats = get_api_call_stats(db=db)
+        return {
+            "status": "success",
+            "data": stats
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取 API 调用统计数据失败: {str(e)}"
+        )
+

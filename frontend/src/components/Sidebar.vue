@@ -31,8 +31,8 @@
             : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40 border-transparent'
         ]"
       >
-        <Icon :icon="item.icon" :width="19" class="flex-shrink-0 group-hover:scale-105 transition" />
-        <span v-show="!resourceStore.sidebarCollapsed" class="text-[15px] font-normal whitespace-nowrap">{{ item.name }}</span>
+        <Icon :icon="item.icon" :width="19" class="nav-icon flex-shrink-0 group-hover:scale-105 transition" />
+        <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">{{ item.name }}</span>
       </div>
     </nav>
 
@@ -49,7 +49,7 @@
           :width="19"
           class="text-amber-500 flex-shrink-0"
         />
-        <span v-show="!resourceStore.sidebarCollapsed" class="text-[15px] font-normal whitespace-nowrap">
+        <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">
           {{ themeStore.theme === 'dark' ? '浅色模式' : '深色模式' }}
         </span>
       </button>
@@ -64,7 +64,7 @@
           :width="19"
           class="flex-shrink-0"
         />
-        <span v-show="!resourceStore.sidebarCollapsed" class="text-[15px] font-normal whitespace-nowrap">收起侧栏</span>
+        <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">收起侧栏</span>
       </button>
 
       <!-- 系统版本 -->
@@ -115,5 +115,19 @@ const menuItems = [
 </script>
 
 <style scoped>
-/* Remove active class override since class binding handles it cleanly */
+/*
+ * 用 px 写死字体与图标尺寸，完全隔离 Naive UI :global() / rem 继承导致的侧边栏
+ * 在不同路由间字体大小不一致的问题。
+ */
+.nav-label {
+  font-size: 14px !important;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+}
+
+.nav-icon {
+  width: 19px !important;
+  height: 19px !important;
+}
 </style>

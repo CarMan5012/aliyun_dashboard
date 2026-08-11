@@ -32,3 +32,22 @@ export async function fetchDbStatus(): Promise<boolean> {
   const { data } = await request.get<{ status: string; is_empty: boolean }>('/db-status')
   return data.is_empty
 }
+
+export interface ApiCallStats {
+  week_total: number
+  today_total: number
+  yesterday_total: number
+  by_service: {
+    ECS: number
+    EIP: number
+    Domain: number
+    SSL: number
+  }
+}
+
+/** 获取阿里云 API 调用次数统计数据 */
+export async function fetchApiCallStats(): Promise<ApiCallStats> {
+  const { data } = await request.get<ApiResponse<ApiCallStats>>('/api-call-stats')
+  return data.data
+}
+

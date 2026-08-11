@@ -742,14 +742,6 @@ function formatDate(dateStr?: string | null): string {
   font-variant-numeric: tabular-nums;
 }
 
-.filter-control {
-  min-height: 30px;
-  padding: 2px 3px 2px 9px;
-  border: 1px solid rgba(226, 232, 240, 0.9);
-  border-radius: 7px;
-  background: rgba(248, 250, 252, 0.8);
-}
-
 .resource-panel {
   box-shadow: 0 8px 28px rgba(30, 64, 175, 0.045);
 }
@@ -758,8 +750,8 @@ function formatDate(dateStr?: string | null): string {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── 浅色主题下的表格样式 ── */
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-th) {
+/* ── 浅色主题下的表格样式（默认，无需 html:not(.dark) 选择器） ── */
+.resource-table :deep(.n-data-table-th) {
   height: 38px;
   padding: 8px 14px;
   background: #ffffff !important;
@@ -771,22 +763,22 @@ function formatDate(dateStr?: string | null): string {
   transition: color 0.2s ease;
 }
 
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sortable:hover) {
+.resource-table :deep(.n-data-table-th--sortable:hover) {
   background: #ffffff !important;
   color: #2563eb !important;
 }
 
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sort-active) {
+.resource-table :deep(.n-data-table-th--sort-active) {
   background: #ffffff !important;
   color: #2563eb !important;
   font-weight: 700;
 }
 
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
+.resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
   color: #2563eb !important;
 }
 
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-td) {
+.resource-table :deep(.n-data-table-td) {
   height: 44px;
   padding: 9px 14px;
   background: #ffffff !important;
@@ -797,7 +789,7 @@ function formatDate(dateStr?: string | null): string {
   transition: background-color 0.18s ease;
 }
 
-:global(html:not(.dark)) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+.resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
   background: #f8fafc !important;
 }
 
@@ -830,22 +822,17 @@ function formatDate(dateStr?: string | null): string {
   font-size: 12px;
 }
 
-/* ── 深色主题下的表格样式 ── */
-:global(html.dark) .asset-count {
+/* ── 深色主题下的表格样式（用 :global(.dark) 匹配 html 上的 .dark 类） ── */
+:global(.dark) .asset-count {
   background: rgba(37, 99, 235, 0.16);
   color: #93c5fd;
 }
 
-:global(html.dark) .filter-control {
-  border-color: rgba(51, 65, 85, 0.8);
-  background: rgba(15, 23, 42, 0.55);
-}
-
-:global(html.dark) .resource-panel {
+:global(.dark) .resource-panel {
   box-shadow: 0 10px 32px rgba(2, 6, 23, 0.24);
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-th) {
+:global(.dark) .resource-table :deep(.n-data-table-th) {
   height: 38px;
   padding: 8px 14px;
   background: #111827 !important;
@@ -856,22 +843,22 @@ function formatDate(dateStr?: string | null): string {
   border-bottom: 1.5px solid rgba(51, 65, 85, 0.6) !important;
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-th--sortable:hover) {
+:global(.dark) .resource-table :deep(.n-data-table-th--sortable:hover) {
   background: #111827 !important;
   color: #60a5fa !important;
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-th--sort-active) {
+:global(.dark) .resource-table :deep(.n-data-table-th--sort-active) {
   background: #111827 !important;
   color: #60a5fa !important;
   font-weight: 700;
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
+:global(.dark) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
   color: #60a5fa !important;
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-td) {
+:global(.dark) .resource-table :deep(.n-data-table-td) {
   height: 44px;
   padding: 9px 14px;
   background: #111827 !important;
@@ -881,7 +868,7 @@ function formatDate(dateStr?: string | null): string {
   border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
 }
 
-:global(html.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+:global(.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
   background: #1f2937 !important;
 }
 </style>
