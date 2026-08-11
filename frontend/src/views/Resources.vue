@@ -7,8 +7,12 @@
               <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">云资产中心</h1>
               <span class="asset-count">{{ activeResourceCount }} 条</span>
             </div>
-            <p class="mt-0.5 text-xs leading-4 text-slate-500 dark:text-slate-400 font-medium">
-              {{ accountStore.activeAccount }} · {{ activeTab }} 资源
+            <p class="mt-0.5 text-xs leading-4 text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5">
+              <span>{{ accountStore.activeAccount }} · {{ activeTab }} 资源</span>
+              <span v-if="resourceStore.isSearchMode" class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-semibold text-[11px]">
+                检索范围: {{ accountStore.activeAccount }} ("{{ resourceStore.searchKeyword }}")
+                <Icon icon="lucide:x" class="cursor-pointer hover:opacity-80 ml-0.5" @click="resourceStore.clearSearch()" />
+              </span>
             </p>
           </div>
 

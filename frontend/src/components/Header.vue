@@ -171,7 +171,11 @@ async function onAccountChange(val: number | null) {
       accountStore.activeAccount = acc.account_alias
     }
   }
-  await resourceStore.loadAllResources(true)
+  if (resourceStore.searchKeyword.trim()) {
+    await resourceStore.performGlobalSearch()
+  } else {
+    await resourceStore.loadAllResources(true)
+  }
 }
 
 async function handleSync() {
