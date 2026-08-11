@@ -16,18 +16,32 @@ def get_redis_client():
         socket_timeout=5
     )
 
+import threading
+
+local_account_locks: dict[int, threading.Lock] = {}
+local_locks_guard = threading.Lock()
+
+def get_local_lock(account_id: int | str) -> threading.Lock:
+    acc_id_int = int(account_id)
+    with local_locks_guard:
+        if acc_id_int not in local_account_locks:
+            local_account_locks[acc_id_int] = threading.Lock()
+        return local_account_locks[acc_id_int]
+
 class RedisInfrastructureError(Exception):
-    """Redis 基础设施网络/连接故障异常，区别于锁已被占用的业务状态"""
+    """Redis 基础设施网络/连接故障异常"""
     pass
 
 class AccountSyncLock:
     def __init__(self, account_id: int | str, timeout: int = 1000):
-        self.account_id = account_id
+        self.account_id = int(account_id)
         self.lock_key = f"sync_lock:account:{account_id}"
         self.task_key = f"sync_task_id:account:{account_id}"
         self.timeout = timeout
         self.token = str(uuid.uuid4())
         self._redis = None
+        self.is_fallback_local = False
+        self.local_acquired = False
 
     @property
     def redis(self):
@@ -37,8 +51,7 @@ class AccountSyncLock:
 
     def acquire(self, task_id: str = None) -> bool:
         """
-        使用 Lua 脚本原子尝试获取账号分布式锁与写入 task_id (Fail-Closed 策略)
-        锁已被占用返回 False；Redis 基础设施异常则抛出 RedisInfrastructureError。
+        尝试获取分布式锁。若 Redis 不可用，自动平滑降级至进程内本地内存锁。
         """
         lua_script = """
         if redis.call('set', KEYS[1], ARGV[1], 'NX', 'EX', ARGV[2]) then
@@ -54,17 +67,21 @@ class AccountSyncLock:
         try:
             res = self.redis.eval(lua_script, 2, self.lock_key, self.task_key, self.token, str(self.timeout), task_id_str)
             return bool(res)
-        except redis.RedisError as re:
-            logger.error(f"Redis 分布式锁基础设施故障 (账号 ID {self.account_id}): {re}")
-            raise RedisInfrastructureError(f"Redis 连接/服务故障: {re}")
         except Exception as e:
-            logger.error(f"Redis 分布式锁异常 (账号 ID {self.account_id}): {e}")
-            raise RedisInfrastructureError(f"Redis 锁故障: {e}")
+            logger.warning(f"Redis 不可用 (账号 ID {self.account_id})，平滑降级至本地线程锁: {e}")
+            self.is_fallback_local = True
+            loc_lock = get_local_lock(self.account_id)
+            acquired = loc_lock.acquire(blocking=False)
+            self.local_acquired = acquired
+            return acquired
 
     def renew(self, additional_seconds: int = 1000) -> bool:
         """
         使用 Lua 脚本对持有令牌的当前锁进行原子续租
         """
+        if self.is_fallback_local:
+            return self.local_acquired
+
         lua_script = """
         if redis.call('get', KEYS[1]) == ARGV[1] then
             redis.call('expire', KEYS[1], ARGV[2])
@@ -85,6 +102,16 @@ class AccountSyncLock:
 
     def release(self):
         """使用 Lua 脚本安全释放锁，避免误解他人锁"""
+        if self.is_fallback_local:
+            if self.local_acquired:
+                loc_lock = get_local_lock(self.account_id)
+                try:
+                    loc_lock.release()
+                except Exception:
+                    pass
+                self.local_acquired = False
+            return
+
         lua_script = """
         if redis.call('get', KEYS[1]) == ARGV[1] then
             redis.call('del', KEYS[2])

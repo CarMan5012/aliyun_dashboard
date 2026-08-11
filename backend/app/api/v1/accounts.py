@@ -191,7 +191,18 @@ def sync_account(account_id: int, full_scan: bool = Query(True), db: Session = D
             "message": f"账号 [{account.account_alias}] 的同步任务已提交后台"
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"同步服务不可用，任务投递失败: {str(e)}"
-        )
+        logger.warning(f"Celery/Redis 队列不可用 ({e})，平滑降级为进程内同步执行...")
+        try:
+            from app.tasks.aliyun_sync import sync_account_resources
+            res = sync_account_resources(account.id, full_scan=full_scan)
+            return {
+                "status": "success",
+                "task_id": f"direct_sync_{account.id}",
+                "message": f"账号 [{account.account_alias}] 资源已平滑同步完成（单机降级模式）",
+                "result": res
+            }
+        except Exception as sync_err:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"同步降级执行异常: {str(sync_err)}"
+            )
