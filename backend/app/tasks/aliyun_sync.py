@@ -907,3 +907,37 @@ def check_and_trigger_sync_task():
         raise e
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task")
+def cron_sync_accounts_by_interval_task(target_interval: int):
+    """
+    Cron 标准整点派发相应周期的云账号同步任务
+    """
+    logger.info(f"Cron 定时整点触发 [{target_interval}小时周期] 的账号同步...")
+    db = SessionLocal()
+    triggered_count = 0
+    try:
+        accounts = db.query(CloudAccount).filter(CloudAccount.sync_interval == target_interval).all()
+        for acc in accounts:
+            if AccountCooldown.is_in_cooldown(acc.id):
+                logger.info(f"账号 [{acc.account_alias}] 处于失败退避冷却中，跳过本次 Cron 触发。")
+                continue
+
+            running_task = AccountSyncLock.get_running_task_id(acc.id)
+            if running_task:
+                logger.info(f"账号 [{acc.account_alias}] 正在执行任务 {running_task}，跳过重复 Cron 投递。")
+                continue
+
+            countdown = ((acc.id - 1) % 6) * 10
+            sync_single_account_task.apply_async(args=[acc.id], countdown=countdown)
+            triggered_count += 1
+            logger.info(f"Cron 已派发账号 [{acc.account_alias}] 的同步任务 (延迟 {countdown}s 错峰执行)")
+
+        return f"Triggered {triggered_count} accounts for interval {target_interval}h"
+    except Exception as e:
+        logger.error(f"Cron 定时触发任务失败 (interval {target_interval}h): {e}")
+        raise e
+    finally:
+        db.close()
+

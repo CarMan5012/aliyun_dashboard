@@ -21,9 +21,25 @@ celery_app.conf.update(
     task_track_started=True,
     imports=["app.tasks.aliyun_sync", "app.tasks.domain_alert"],
     beat_schedule={
-        "check-and-trigger-sync-every-5-minutes": {
-            "task": "app.tasks.aliyun_sync.check_and_trigger_sync_task",
-            "schedule": timedelta(minutes=5),
+        "cron-sync-every-1-hour": {
+            "task": "app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task",
+            "schedule": crontab(minute=0),  # 每小时整点触发 (如 1:00, 2:00)
+            "args": [1],
+        },
+        "cron-sync-every-6-hours": {
+            "task": "app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task",
+            "schedule": crontab(minute=0, hour="*/6"),  # 每 6 小时整点触发 (0:00, 6:00, 12:00, 18:00)
+            "args": [6],
+        },
+        "cron-sync-every-12-hours": {
+            "task": "app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task",
+            "schedule": crontab(minute=0, hour="*/12"),  # 每 12 小时整点触发 (0:00, 12:00)
+            "args": [12],
+        },
+        "cron-sync-every-24-hours": {
+            "task": "app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task",
+            "schedule": crontab(minute=0, hour=0),  # 每天凌晨 0 点触发
+            "args": [24],
         },
         "check-domain-alert-every-day": {
             "task": "app.tasks.domain_alert.check_domain_alert_task",
