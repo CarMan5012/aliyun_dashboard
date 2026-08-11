@@ -38,11 +38,6 @@
               </h3>
               <p class="mt-1 text-[10.5px] text-slate-400 dark:text-slate-500">自动记录后台同步任务发起阿里云 OpenAPI/SDK 请求调用的近 7 天分布与趋势</p>
             </div>
-            <div class="flex items-center gap-2">
-              <span class="text-xs px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-mono">
-                实时自动汇总
-              </span>
-            </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
