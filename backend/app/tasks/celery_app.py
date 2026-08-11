@@ -21,9 +21,9 @@ celery_app.conf.update(
     task_track_started=True,
     imports=["app.tasks.aliyun_sync", "app.tasks.domain_alert"],
     beat_schedule={
-        "check-and-trigger-sync-every-30-minutes": {
+        "check-and-trigger-sync-every-5-minutes": {
             "task": "app.tasks.aliyun_sync.check_and_trigger_sync_task",
-            "schedule": timedelta(minutes=30),
+            "schedule": timedelta(minutes=5),
         },
         "check-domain-alert-every-day": {
             "task": "app.tasks.domain_alert.check_domain_alert_task",
