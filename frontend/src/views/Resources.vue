@@ -223,7 +223,7 @@ async function onAccountFilter(accountId: number | null) {
     : accountStore.accounts.find(account => account.id === accountId)?.account_alias || '全部账号'
   pagination.page = 1
   resourceStore.selectedRowKeys = []
-  await resourceStore.loadAllResources()
+  await resourceStore.loadAllResources(true)
 }
 
 const pagination = reactive({

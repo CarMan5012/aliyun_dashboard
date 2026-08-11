@@ -68,6 +68,8 @@ def parse_expiration_date(value) -> datetime.date | None:
 
 
 def classify_domain(days: int, config: DomainAlertSetting) -> str | None:
+    if days < -30:
+        return None
     if days <= config.critical_days:
         return "critical"
     if days <= config.warning_days:
