@@ -171,7 +171,7 @@ async function onAccountChange(val: number | null) {
       accountStore.activeAccount = acc.account_alias
     }
   }
-  await resourceStore.loadAllResources()
+  await resourceStore.loadAllResources(true)
 }
 
 async function handleSync() {

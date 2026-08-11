@@ -17,7 +17,7 @@ export const useNotificationStore = defineStore('notification', () => {
       if (!expDate) return false
       const target = dayjs(expDate).startOf('day')
       const days = target.diff(today, 'day')
-      return days <= threshold
+      return days >= 0 && days <= threshold
     })
   })
 

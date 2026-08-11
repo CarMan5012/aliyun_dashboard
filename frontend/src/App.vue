@@ -17,15 +17,17 @@
 import { watch, onMounted, computed } from 'vue'
 import { darkTheme, zhCN, dateZhCN } from 'naive-ui'
 import type { GlobalThemeOverrides } from 'naive-ui'
-import { useAccountStore, useResourceStore, useThemeStore } from '@/store'
+import { useAccountStore, useResourceStore, useThemeStore, useSettingStore } from '@/store'
 
 const themeStore = useThemeStore()
 const accountStore = useAccountStore()
 const resourceStore = useResourceStore()
+const settingStore = useSettingStore()
 
 onMounted(async () => {
   themeStore.initTheme()
   try {
+    await settingStore.loadSettings()
     await accountStore.loadAccounts()
     await resourceStore.loadAllResources()
   } catch (e) {}

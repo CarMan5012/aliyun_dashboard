@@ -73,10 +73,10 @@ export const useResourceStore = defineStore('resource', () => {
     }
   }
 
-  async function loadAllResources() {
-    if (loading.value) return
+  async function loadAllResources(force = false) {
+    if (loading.value && !force) return
     const hasCachedData = ecsList.value.length > 0 || eipList.value.length > 0 || domainList.value.length > 0 || sslList.value.length > 0
-    if (!hasCachedData) {
+    if (!hasCachedData || force) {
       loading.value = true
     }
     isSearchMode.value = false
