@@ -1,111 +1,174 @@
 # 阿里云资源看板 (Aliyun Resource Dashboard)
 
-本项目是一个高度自动化、高颜值的多账号云资源聚合监控与管理面板。支持通过 API 自动拉取和汇总展示阿里云的 **ECS 实例、弹性公网 IP (EIP)、域名资产** 以及 **SSL 证书**，并提供实时同步状态、秒级计时器和零资产引导等 Premium 级用户体验。
+[![Docker Hub Frontend](https://img.shields.io/badge/docker--hub-frontend-blue?logo=docker)](https://hub.docker.com/r/carman5012/aliyun-dashboard-frontend)
+[![Docker Hub Backend](https://img.shields.io/badge/docker--hub-backend-blue?logo=docker)](https://hub.docker.com/r/carman5012/aliyun-dashboard-backend)
+
+本项目是一个高度自动化、现代美观的多账号云资源聚合监控与管理面板。支持通过 API 自动拉取和汇总展示阿里云的 **ECS 实例、弹性公网 IP (EIP)、域名资产** 以及 **SSL 证书**，内置内置定时调度、域名到期钉钉告警、多格式资产自定义导出以及敏感密钥端到端加密保护。
 
 ---
 
-## 🎨 系统特色
-1. **多账号级联整合**：一站式配置和管理多个阿里云 AccessKey，数据拉取合并展示，支持账号维度快速筛选过滤。
-2. **定时自动同步 (Celery Beat)**：支持在页面上直接调整每个云账号的“自动数据同步频率”（如手动、每小时、每天等），后台异步检测调度。
-3. **秒级实时同步计时器**：手动触发资产同步时，主内容区会呈现精致的毛玻璃 Banner，伴随**秒级递增的耗时计时器**，实时展示轮询的 Celery 后台状态。
-4. **级联安全清理**：当删除或更新账号别名时，系统会自动删除对应的孤立资产，或自动更新旧资产的归属关系，彻底避免脏数据和重复数据。
-5. **暗黑模式支持**：配备极具设计感的主题切换，所有 Naive UI 组件及自定义 Tailwind 样式均完美适配深/浅色模式。
+## 🎨 核心特性
 
----
-
-## 📂 目录结构与文件说明
-
-```text
-aliyun_dashboard/
-├── backend/                           # Python 后端微服务
-│   ├── app/
-│   │   ├── api/                       # RESTful API 路由模块
-│   │   │   ├── router.py              # API 路由器总线 (挂载 accounts 和 resources)
-│   │   │   └── v1/
-│   │   │       ├── accounts.py        # 云账号配置接口 (列表、创建、删除、立即同步)
-│   │   │       └── resources.py       # 云资源查询、全局搜索及 Celery 状态查询接口
-│   │   ├── core/                      # 核心模块
-│   │   │   ├── config.py              # 系统配置类 (连接池参数、敏感信息 fallback)
-│   │   │   └── security.py            # 基于 Fernet 的 SK 双向安全加解密机制
-│   │   ├── crud/                      # 数据库 CRUD 实现
-│   │   │   ├── crud_account.py        # 云账号 CRUD (支持资源别名级联更新与删除级联清理)
-│   │   │   └── crud_resource.py       # 统一资源检索与全局模糊搜索
-│   │   ├── db/                        # 数据库连接
-│   │   │   ├── base.py                # ORM 声明基类 Base
-│   │   │   └── session.py             # 数据库 Session 本地依赖生成器 (get_db)
-│   │   ├── models/                    # SQLAlchemy 模型
-│   │   │   ├── account.py             # 阿里云凭证账号表 (密文存储 Secret Key)
-│   │   │   └── resource.py            # 各类云资源表 (Details 以 JSON 动态格式存储)
-│   │   ├── schemas/                   # Pydantic 实体传输类 (校验及过滤)
-│   │   │   ├── account.py             # 账号创建、更新与响应模型定义
-│   │   │   └── resource.py            # 资产信息、数据库空状态响应模型
-│   │   └── tasks/                     # 异步及调度模块
-│   │       ├── celery_app.py          # Celery 实例定义与 Beat 定时同步频率注册
-│   │       └── aliyun_sync.py         # 阿里云 API 交互逻辑与同步 Celery Tasks 定义
-│   ├── requirements.txt               # 后端 Python 依赖包清单
-│   └── Dockerfile                     # 后端容器构建文件 (依赖预装、时区锁定、启动入口)
-├── frontend/                          # Vite + Vue 3 + TS 前端工程
-│   ├── src/
-│   │   ├── api/
-│   │   │   └── index.ts               # 基于 Axios 封装的统一前后端数据交互中心
-│   │   ├── assets/
-│   │   │   └── main.css               # 全局样式控制 (含自定义动画与暗黑主题转换样式)
-│   │   ├── components/                # 可复用组件目录
-│   │   │   ├── AccountManager.vue     # 账号管理视图 (账号增删改查、独立同步、修改频率)
-│   │   │   ├── ResourceTable.vue      # 资产数据表 (支持数据分类、搜索展示、元数据弹窗)
-│   │   │   ├── Sidebar.vue            # 可折叠左侧系统导航栏
-│   │   │   └── StatCards.vue          # 四大资产概览指标统计卡片
-│   │   ├── router/
-│   │   │   └── index.ts               # Vue Router SPA 路由规则 (SPA 模式)
-│   │   ├── store/
-│   │   │   └── index.ts               # Pinia 状态库 (包含轮询同步状态、秒级计时器逻辑)
-│   │   └── views/
-│   │       └── Dashboard.vue          # 看板主容器 (顶栏、通知 Banner、多态空状态引导)
-│   ├── index.html                     # 静态页面容器主入口 (设定项目标题)
-│   ├── nginx.conf                     # Nginx 配置 (SPA 路由分发及后端 API 动态反代)
-│   └── Dockerfile                     # 前端多阶段构建文件 (Node.js 编译 -> Nginx 部署)
-├── docker-compose.yml                 # 多容器联合部署编排文件 (锁定容器依赖顺序与变量)
-├── generate_key.py                    # 快速生成 ASSETVISTA_MASTER_KEY 安全主密钥的工具
-└── README.md                          # 项目架构与部署指南说明书
-```
+1. **多账号聚合与隔离**：一站式接入与管理多个阿里云 AccessKey，自动拉取并合并展示资产，支持账号与资源类型的多维筛选。
+2. **轻量化原生调度**：内置基于 APScheduler 的自动数据调度引擎，无需繁重消息队列中间件，支持为每个账号独立配置同步频率。
+3. **域名到期智能告警**：
+   * 支持到期天数动态阶梯预警，自动推送钉钉群消息。
+   * 支持中国节假日/周末智能避峰，自动计算前序最近工作日进行告警推送。
+   * 支持云解析 DNS 自动续费失败感知与失败重试调度。
+4. **资产全量/自定义导出**：支持 CSV 与 JSON 格式导出，包含精准解析的公网 IP 列表（含 ECS 绑定 EIP 与固定公网 IP）、域名注册商信息及详细元数据。
+5. **秒级实时同步计时器**：手动触发资产同步时，主内容区呈现精致毛玻璃 Banner，秒级实时展示同步耗时与执行进度。
+6. **企业级安全保障**：
+   * 阿里云 Secret Key 采用 Fernet (AES-256) 双向加密存储，接口层脱敏，前端永不接触明文密钥。
+   * 管理设置页受口令保护，杜绝未授权修改。
+7. **暗黑模式与现代 UI**：精美的深浅色主题切换，完美适配各种桌面分辨率。
 
 ---
 
 ## 🚀 快速开始与部署
 
-本项目已实现完全的容器化，通过 Docker Compose 可以实现一键式多层容器部署。
-
-### 1. 生成安全加密主密钥 (Master Key)
-后端会对用户的 AccessKey Secret 采用安全 AES-256-CBC 算法加密落盘。在首次启动前，需要在宿主机生成密钥：
+### 1. 生成加密主密钥 (Master Key)
+后端使用 AES-256 加密保存云账号密钥，部署前请先生成一个密钥：
 ```bash
 python generate_key.py
+# 或使用单行命令生成：
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
 ```
-它会输出一个类似如下的 Base64 格式密钥：
-```text
-vtS4rVskX7eL9qP2mK6b5H8w3d1yG4hL0p3s5t6w7x8=
-```
-
-### 2. 启动 Docker 容器服务
-您可以将刚刚生成的密钥设置为环境变量，也可以直接通过 Docker Compose 默认值（提供本地开发 fallback）运行。
-在项目根目录下执行：
-```bash
-docker compose up --build -d
-```
-启动后容器包含：
-* `aliyun-dashboard-db` (MySQL 8.0)
-* `aliyun-dashboard-redis` (Redis 缓存与 Celery 消息队列)
-* `aliyun-dashboard-backend` (FastAPI 接口服务，自动重试连通数据库建表)
-* `aliyun-dashboard-worker` (Celery 异步工作流及 Beat 定时同步调度器)
-* `aliyun-dashboard-frontend` (Nginx 托管的前端单页应用，暴露宿主机 `81` 端口)
-### 3. 访问面板
-打开浏览器，访问：
-```text
-http://localhost:81
-```
-即可开始查看各类云资源，并在左下角 **「云账号管理」** 里新增、删除或调整您的阿里云凭证及自动同步频率。
 
 ---
 
-## 🛡️ 安全合规说明
-* **凭证加解密**：项目中所有的 `AccessKey Secret` 均在后端执行 AES-256 加密后再写入数据库。
-* **密钥混淆**：解密行为仅限在 `celery_worker` 执行抓取任务时进行，**用完即焚**，绝不通过任何 API 接口流向前端，前端回显 AK 时会进行掩码脱敏处理。
+### 2. 生产环境部署 (推荐，使用 Docker Hub 镜像)
+
+生产服务器**无需拉取项目源码**，只需准备配置文件即可启动：
+
+1. **创建工作目录与配置文件**：
+   ```bash
+   mkdir -p /opt/aliyun-dashboard/data
+   cd /opt/aliyun-dashboard
+   ```
+
+2. **配置环境变量 `.env`**：
+   ```bash
+   cat << 'EOF' > .env
+   # 资产系统主密钥 (必填)
+   ASSETVISTA_MASTER_KEY=你的Base64加密主密钥
+   
+   # 系统设置管理口令 (必填，用于保存告警配置等)
+   SETTINGS_ADMIN_PASSWORD=你的管理员强密码
+   EOF
+   ```
+
+3. **创建 `docker-compose.prod.yml`**：
+   ```yaml
+   services:
+     backend:
+       image: carman5012/aliyun-dashboard-backend:latest
+       container_name: aliyun-dashboard-backend
+       restart: always
+       expose:
+         - "8000"
+       volumes:
+         - ./data:/app/data
+       environment:
+         - DB_TYPE=sqlite
+         - SQLITE_DB_PATH=/app/data/aliyun.db
+         - "ASSETVISTA_MASTER_KEY=${ASSETVISTA_MASTER_KEY:?Error: ASSETVISTA_MASTER_KEY must be set}"
+         - "SETTINGS_ADMIN_PASSWORD=${SETTINGS_ADMIN_PASSWORD:?Error: SETTINGS_ADMIN_PASSWORD must be set}"
+         - TZ=Asia/Shanghai
+
+     frontend:
+       image: carman5012/aliyun-dashboard-frontend:latest
+       container_name: aliyun-dashboard-frontend
+       restart: always
+       ports:
+         - "81:80"
+       environment:
+         - "SETTINGS_ADMIN_PASSWORD=${SETTINGS_ADMIN_PASSWORD:?Error: SETTINGS_ADMIN_PASSWORD must be set}"
+       depends_on:
+         - backend
+   ```
+
+4. **一键拉取与启动**：
+   ```bash
+   docker-compose -f docker-compose.prod.yml pull
+   docker-compose -f docker-compose.prod.yml up -d
+   ```
+
+---
+
+### 3. 本地开发与源码构建部署
+
+如果您拉取了完整源码，可以直接在根目录构建启动：
+
+```bash
+# 复制并修改环境变量配置
+cp .env.example .env
+
+# 构建并启动服务
+docker-compose up --build -d
+```
+
+---
+
+### 4. 访问系统
+* 浏览器打开：`http://<服务器IP或localhost>:81`
+* 首次使用请进入 **「账号管理」** 页面添加您的阿里云 AccessKey。
+* 系统设置页口令即为 `.env` 中配置的 `SETTINGS_ADMIN_PASSWORD`。
+
+---
+
+## 🛠️ 镜像构建与发布指南
+
+如需重新构建 Docker 镜像并推送到 Docker Hub：
+
+```bash
+# 1. 登录 Docker Hub
+docker login -u carman5012
+
+# 2. 构建并推送后端
+docker build -t carman5012/aliyun-dashboard-backend:latest ./backend
+docker push carman5012/aliyun-dashboard-backend:latest
+
+# 3. 构建并推送前端
+docker build -t carman5012/aliyun-dashboard-frontend:latest ./frontend
+docker push carman5012/aliyun-dashboard-frontend:latest
+```
+
+---
+
+## 📂 目录结构
+
+```text
+aliyun_dashboard/
+├── backend/                           # Python FastAPI 后端服务
+│   ├── app/
+│   │   ├── api/v1/                    # API 控制器 (账号、资产、系统设置)
+│   │   ├── core/                      # 核心配置与 Fernet 密钥加解密模块
+│   │   ├── crud/                      # 数据库 CRUD 操作
+│   │   ├── db/                        # 数据库连接与 Session 管理 (支持 SQLite / MySQL)
+│   │   ├── models/                    # SQLAlchemy 数据模型
+│   │   ├── schemas/                   # Pydantic 请求/响应模型定义
+│   │   └── tasks/                     # 阿里云同步引擎、APScheduler 调度与域名告警
+│   ├── requirements.txt               # 后端依赖清单
+│   └── Dockerfile                     # 后端轻量化容器构建文件
+├── frontend/                          # Vue 3 + Vite + TypeScript 前端工程
+│   ├── src/
+│   │   ├── api/                       # 后端 API 接口封装
+│   │   ├── assets/                    # 全局 Tailwind 与动画样式
+│   │   ├── components/                # 布局、统计卡片、导航组件
+│   │   ├── store/                     # Pinia 状态管理 (资源、通知、同步状态)
+│   │   └── views/                     # 概览看板、资产列表、账号管理、同步中心、系统设置
+│   ├── nginx.conf                     # Nginx 反向代理与环境变量注入配置
+│   └── Dockerfile                     # 前端多阶段极简构建文件
+├── docker-compose.yml                 # 源码构建本地运行编排文件
+├── docker-compose.prod.yml            # 生产环境预编译镜像编排文件
+├── generate_key.py                    # 主密钥生成工具
+└── README.md                          # 项目文档
+```
+
+---
+
+## 🛡️ 安全规范
+
+* **密钥落盘加密**：数据库中存储的所有云账号 Secret Key 均为强加密密文。
+* **脱敏与最小权限**：API 返回数据中 AccessKey 会自动掩码处理，加解密只在抓取任务内部瞬时完成。
+* **代码与镜像防护**：`.dockerignore` 与 `.gitignore` 均已深度配置，杜绝任何 `.env`、本地数据库、测试文件或密钥凭证被意外打包或推送到远程仓库。

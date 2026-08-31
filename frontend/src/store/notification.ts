@@ -8,7 +8,7 @@ export const useNotificationStore = defineStore('notification', () => {
   const resourceStore = useResourceStore()
   const settingStore = useSettingStore()
 
-  // 1. 到期域名提醒列表
+  // 1. 到期域名提醒列表（包含临期及已逾期30天内的紧急域名）
   const warningDomains = computed(() => {
     const threshold = settingStore.reminderDays
     const today = dayjs().startOf('day')
@@ -17,11 +17,11 @@ export const useNotificationStore = defineStore('notification', () => {
       if (!expDate) return false
       const target = dayjs(expDate).startOf('day')
       const days = target.diff(today, 'day')
-      return days >= 0 && days <= threshold
+      return days <= threshold && days >= -30
     })
   })
 
-  // 2. 到期证书提醒列表
+  // 2. 到期证书提醒列表（包含临期及已逾期30天内的紧急证书）
   const warningCerts = computed(() => {
     const threshold = settingStore.warningDaysThreshold
     const today = dayjs().startOf('day')
@@ -30,7 +30,7 @@ export const useNotificationStore = defineStore('notification', () => {
       if (!endTime) return false
       const target = dayjs(endTime).startOf('day')
       const days = target.diff(today, 'day')
-      return days >= 0 && days <= threshold
+      return days <= threshold && days >= -30
     })
   })
 

@@ -21,15 +21,21 @@ app = FastAPI(
     redoc_url=f"{settings.API_V1_STR}/redoc"
 )
 
-# 自动在 MySQL 中建表（如果不存在对应表），带有重试逻辑防止 MySQL 启动过慢导致进程直接崩溃
 def init_db():
+    if settings.is_sqlite:
+        logger.info(f"Connecting to SQLite database at {settings.SQLITE_DB_PATH}...")
+        Base.metadata.create_all(bind=engine)
+        logger.info("Successfully initialized SQLite database tables.")
+        migrate_db()
+        return
+
     max_retries = 30
     retry_interval = 2
     for i in range(max_retries):
         try:
-            logger.info(f"Connecting to database at {settings.MYSQL_HOST}:{settings.MYSQL_PORT} (attempt {i+1}/{max_retries})...")
+            logger.info(f"Connecting to MySQL database at {settings.MYSQL_HOST}:{settings.MYSQL_PORT} (attempt {i+1}/{max_retries})...")
             Base.metadata.create_all(bind=engine)
-            logger.info("Successfully connected to the database and initialized tables.")
+            logger.info("Successfully connected to the MySQL database and initialized tables.")
             # 执行平滑增量迁移与孤立数据审计
             migrate_db()
             return
@@ -44,6 +50,8 @@ def init_db():
 import os
 if os.getenv("TESTING") != "true":
     init_db()
+    from app.tasks.scheduler import start_lightweight_scheduler
+    start_lightweight_scheduler()
 
 # CORS 配置
 app.add_middleware(

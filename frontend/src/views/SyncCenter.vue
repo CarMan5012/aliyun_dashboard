@@ -249,18 +249,30 @@ const columns = [
   padding: 6px 12px;
   font-size: 13px !important;
   font-weight: 600;
+  transition: color 160ms var(--ease-out);
 }
 
 .sync-table :deep(.n-data-table-td) {
   height: 40px;
   padding: 6px 12px;
   font-size: 13px !important;
+  transition: background-color 160ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sync-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+    background-color: #f8fafc !important;
+  }
+  :global(.dark) .sync-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+    background-color: #1f2937 !important;
+  }
 }
 
 .sync-table :deep(.n-tag) {
   height: 22px;
   padding: 0 6px;
   font-size: 12px !important;
+  transition: background-color 180ms ease, color 180ms ease;
 }
 
 .custom-scroll::-webkit-scrollbar {

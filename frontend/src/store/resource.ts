@@ -32,7 +32,7 @@ export const useResourceStore = defineStore('resource', () => {
   const visibleColumns = ref<Record<string, string[]>>({
     ECS: ['account_name', 'instance_name', 'instance_id', 'region_id', 'status', 'cpu', 'memory', 'public_ips', 'private_ips', 'eip', 'expired_time', 'action'],
     EIP: ['account_name', 'ip_address', 'bandwidth', 'charge_type', 'instance_id', 'status', 'creation_time'],
-    Domain: ['account_name', 'domain_name', 'registration_date', 'expiration_date', 'remaining_days'],
+    Domain: ['account_name', 'domain_name', 'registrant', 'registration_date', 'expiration_date', 'remaining_days'],
     SSL: ['account_name', 'cert_name', 'domain', 'cert_type', 'brand', 'cert_start_time', 'cert_end_time', 'remaining_days', 'status']
   })
 

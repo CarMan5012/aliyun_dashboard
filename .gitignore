@@ -1,10 +1,27 @@
-# Environment variables
+# Environment variables & Secret Keys
 .env
+.env.*
+!.env.example
+key
+*.key
+keys/
+*.pem
+*.pfx
+*.cert
+*.crt
+
+# Local Databases & Output Data
+*.sqlite3
+*.db
+backend/app.db
+data/
+output/
 
 # Node.js
 node_modules/
 frontend/node_modules/
 frontend/dist/
+.output/
 
 # Python
 __pycache__/
@@ -12,21 +29,21 @@ __pycache__/
 *.pyo
 *.pyd
 .pytest_cache/
+.coverage
+htmlcov/
 .venv/
 venv/
 ENV/
 backend/__pycache__/
 backend/app/__pycache__/
 
-# Database / SQLite
-*.sqlite3
-*.db
-backend/app.db
-data/
-
-# IDE & OS
+# IDE & OS & Agent Tools
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
 .playwright-cli/
+.agents/
+.claude/
+agent/
+skills-lock.json

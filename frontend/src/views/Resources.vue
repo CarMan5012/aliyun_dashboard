@@ -17,6 +17,15 @@
           </div>
 
           <div class="flex items-center gap-2.5 mt-2 sm:mt-0">
+            <n-select
+              :value="accountStore.activeAccountId"
+              :options="accountOptions"
+              size="medium"
+              style="width: 180px"
+              placeholder="按云账号筛选"
+              class="rounded-lg"
+              @update:value="onAccountFilter"
+            />
             <n-input
               v-model:value="searchQuery"
               size="medium"
@@ -58,12 +67,12 @@
             后台数据库连接或查询异常，资产数据暂时无法实时加载。
           </n-alert>
 
-          <n-tabs v-model:value="activeTab" type="segment" size="medium" animated @update:value="onTabChange">
+          <n-tabs v-model:value="activeTab" type="segment" size="small" animated @update:value="onTabChange">
             <n-tab-pane name="ECS" tab="ECS 云服务器">
               <n-data-table
                 class="resource-table"
-                size="medium"
-                :scroll-x="1420"
+                size="small"
+                :scroll-x="1550"
                 :loading="resourceStore.loading"
                 :columns="ecsColumns"
                 :data="filteredEcs"
@@ -77,8 +86,8 @@
             <n-tab-pane name="EIP" tab="弹性公网 IP">
               <n-data-table
                 class="resource-table"
-                size="medium"
-                :scroll-x="900"
+                size="small"
+                :scroll-x="1050"
                 :loading="resourceStore.loading"
                 :columns="eipColumns"
                 :data="filteredEip"
@@ -92,8 +101,8 @@
             <n-tab-pane name="Domain" tab="域名资产">
               <n-data-table
                 class="resource-table"
-                size="medium"
-                :scroll-x="820"
+                size="small"
+                :scroll-x="960"
                 :loading="resourceStore.loading"
                 :columns="domainColumns"
                 :data="filteredDomain"
@@ -107,8 +116,8 @@
             <n-tab-pane name="SSL" tab="SSL 安全证书">
               <n-data-table
                 class="resource-table"
-                size="medium"
-                :scroll-x="1080"
+                size="small"
+                :scroll-x="1220"
                 :loading="resourceStore.loading"
                 :columns="sslColumns"
                 :data="filteredSsl"
@@ -232,9 +241,9 @@ async function onAccountFilter(accountId: number | null) {
 
 const pagination = reactive({
   page: 1,
-  pageSize: 15,
+  pageSize: 50,
   showSizePicker: true,
-  pageSizes: [15, 30, 50, 100],
+  pageSizes: [20, 50, 100, 200],
   onChange: (page: number) => {
     pagination.page = page
   },
@@ -270,6 +279,7 @@ const allColumns = {
   Domain: [
     { label: '所属账号', value: 'account_name' },
     { label: '域名', value: 'domain_name' },
+    { label: '域名持有者', value: 'registrant' },
     { label: '注册日期', value: 'registration_date' },
     { label: '过期日期', value: 'expiration_date' },
     { label: '剩余天数', value: 'remaining_days' },
@@ -290,11 +300,11 @@ const allColumns = {
 const accountColumn: any = {
   title: '所属账号',
   key: 'account_name',
-  width: 136,
+  minWidth: 175,
   sorter: (a: any, b: any) => (a.account_name || '').localeCompare(b.account_name || ''),
   render(row: any) {
     return h('span', {
-      class: 'inline-flex max-w-[124px] truncate rounded-md bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 text-[11px] font-medium text-slate-700 dark:text-slate-300',
+      class: 'inline-flex rounded bg-slate-100 dark:bg-slate-800/80 px-2 py-0.5 text-xs font-normal text-slate-700 dark:text-slate-300 whitespace-nowrap',
       title: row.account_name || '-'
     }, row.account_name || '-')
   }
@@ -303,31 +313,35 @@ const accountColumn: any = {
 const ecsColumns = computed(() => {
   const visible = resourceStore.visibleColumns.ECS
   const list = [
-    { type: 'selection' as const },
+    { type: 'selection' as const, width: 36 },
     accountColumn,
     {
       title: '实例名称',
       key: 'instance_name',
+      minWidth: 140,
       sorter: (a: any, b: any) => (a.details?.instance_name || '').localeCompare(b.details?.instance_name || ''),
       render(row: any) {
-        return h('span', { class: 'text-[11.5px] font-semibold text-slate-800 dark:text-slate-100' }, row.details.instance_name || '-')
+        return h('span', { class: 'text-[13px] font-normal text-slate-800 dark:text-slate-100 whitespace-nowrap' }, row.details.instance_name || '-')
       }
     },
     {
       title: '实例 ID',
       key: 'instance_id',
+      width: 155,
       sorter: (a: any, b: any) => (a.details?.instance_id || '').localeCompare(b.details?.instance_id || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-400 dark:text-slate-500' }, row.details.instance_id) }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap' }, row.details.instance_id) }
     },
     {
       title: '区域',
       key: 'region_id',
+      width: 100,
       sorter: (a: any, b: any) => (a.details?.region_id || '').localeCompare(b.details?.region_id || ''),
-      render(row: any) { return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300' }, row.details.region_id) }
+      render(row: any) { return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap' }, row.details.region_id) }
     },
     {
       title: '实例状态',
       key: 'status',
+      width: 95,
       sorter: (a: any, b: any) => (a.details?.status || '').localeCompare(b.details?.status || ''),
       render(row: any) {
         const status = row.details.status
@@ -346,66 +360,72 @@ const ecsColumns = computed(() => {
         return h(NTag, { size: 'small', type, bordered: false }, { default: () => label })
       }
     },
-    { title: 'CPU', key: 'cpu', sorter: (a: any, b: any) => (a.details?.cpu || 0) - (b.details?.cpu || 0), render(row: any) { return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300 font-medium' }, `${row.details.cpu}核`) } },
+    { title: 'CPU', key: 'cpu', width: 75, sorter: (a: any, b: any) => (a.details?.cpu || 0) - (b.details?.cpu || 0), render(row: any) { return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 font-normal whitespace-nowrap' }, `${row.details.cpu}核`) } },
     {
       title: '内存',
       key: 'memory',
+      width: 85,
       sorter: (a: any, b: any) => (a.details?.memory || 0) - (b.details?.memory || 0),
       render(row: any) {
         const mem = row.details?.memory || 0
-        if (!mem) return h('span', { class: 'text-[11.5px] text-slate-400' }, '-')
-        if (mem < 1024) return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300 font-medium' }, `${mem}MB`)
+        if (!mem) return h('span', { class: 'text-xs text-slate-400' }, '-')
+        if (mem < 1024) return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 font-normal whitespace-nowrap' }, `${mem}MB`)
         const gb = mem / 1024
-        return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300 font-medium' }, `${gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1)}G`)
+        return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 font-normal whitespace-nowrap' }, `${gb % 1 === 0 ? gb.toFixed(0) : gb.toFixed(1)}G`)
       }
     },
     {
       title: '公网 IP',
       key: 'public_ips',
+      minWidth: 120,
       render(row: any) {
         const ips = row.details.public_ips || []
-        if (ips.length === 0) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-[11px]' }, '-')
-        return h('div', { class: 'flex flex-col gap-1' }, ips.map((ip: string) =>
-          h('span', { class: 'text-[11px] font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap' }, ip)
+        if (ips.length === 0) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-xs' }, '-')
+        return h('div', { class: 'flex flex-col gap-0.5' }, ips.map((ip: string) =>
+          h('span', { class: 'text-xs font-mono px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-600 dark:text-blue-400 font-normal whitespace-nowrap' }, ip)
         ))
       }
     },
     {
       title: '内网 IP',
       key: 'private_ips',
+      minWidth: 120,
       render(row: any) {
         const ips = row.details.private_ips || []
-        if (ips.length === 0) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-[11px]' }, '-')
-        return h('div', { class: 'flex flex-col gap-1' }, ips.map((ip: string) =>
-          h('span', { class: 'text-[11px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap' }, ip)
+        if (ips.length === 0) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-xs' }, '-')
+        return h('div', { class: 'flex flex-col gap-0.5' }, ips.map((ip: string) =>
+          h('span', { class: 'text-xs font-mono px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-normal whitespace-nowrap' }, ip)
         ))
       }
     },
     {
       title: '弹性 IP',
       key: 'eip',
+      width: 120,
       render(row: any) {
         const eip = row.details.eip
-        if (!eip) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-[11px]' }, '-')
-        return h('span', { class: 'text-[11px] font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-650 dark:text-purple-400 font-medium whitespace-nowrap' }, eip)
+        if (!eip) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-xs' }, '-')
+        return h('span', { class: 'text-xs font-mono px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-650 dark:text-purple-400 font-normal whitespace-nowrap' }, eip)
       }
     },
     {
       title: '释放到期',
       key: 'expired_time',
+      width: 135,
       sorter: (a: any, b: any) => {
         const ta = a.details?.expired_time ? dayjs(a.details.expired_time).valueOf() : 0
         const tb = b.details?.expired_time ? dayjs(b.details.expired_time).valueOf() : 0
         return ta - tb
       },
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.expired_time?.replace('T', ' ').replace('Z', '') || '-') }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.expired_time?.replace('T', ' ').replace('Z', '') || '-') }
     },
     {
       title: '操作',
       key: 'action',
+      width: 65,
       render(row: any) {
         return h(NButton, {
-          size: 'tiny',
+          size: 'small',
           quaternary: true,
           type: 'primary',
           onClick: () => {
@@ -422,38 +442,42 @@ const ecsColumns = computed(() => {
 const eipColumns = computed(() => {
   const visible = resourceStore.visibleColumns.EIP
   const list = [
-    { type: 'selection' as const },
+    { type: 'selection' as const, width: 36 },
     accountColumn,
     {
       title: 'IP 地址',
       key: 'ip_address',
+      width: 130,
       sorter: (a: any, b: any) => (a.details?.ip_address || '').localeCompare(b.details?.ip_address || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11.5px] font-semibold text-slate-800 dark:text-slate-100' }, row.details.ip_address) }
+      render(row: any) { return h('span', { class: 'font-mono text-[13px] font-normal text-slate-800 dark:text-slate-100 whitespace-nowrap' }, row.details.ip_address) }
     },
     {
       title: '带宽 (Mbps)',
       key: 'bandwidth',
+      width: 105,
       sorter: (a: any, b: any) => (a.details?.bandwidth || 0) - (b.details?.bandwidth || 0),
-      render(row: any) { return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300 font-medium' }, `${row.details.bandwidth || '-'} Mbps`) }
+      render(row: any) { return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 font-normal whitespace-nowrap' }, `${row.details.bandwidth || '-'} Mbps`) }
     },
     { 
       title: '计费类型', 
       key: 'charge_type', 
+      width: 100,
       render(row: any) { 
         const ct = row.details.charge_type || row.details.internet_charge_type
-        if (!ct) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-[11.5px]' }, '未知')
+        if (!ct) return h('span', { class: 'text-slate-400 dark:text-slate-500 text-xs' }, '未知')
         let label = ct
         if (ct === 'PayByTraffic') label = '按流量'
         else if (ct === 'PayByBandwidth') label = '按固定带宽'
         else if (ct === 'PrePaid') label = '包年包月'
         else if (ct === 'PostPaid') label = '按量付费'
-        return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300' }, label)
+        return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap' }, label)
       } 
     },
-    { title: '关联实例', key: 'instance_id', render(row: any) { return row.details.instance_id ? h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.instance_id) : h('span', { class: 'text-slate-400 dark:text-slate-500 text-[11px]' }, '未绑定') } },
+    { title: '关联实例', key: 'instance_id', width: 150, render(row: any) { return row.details.instance_id ? h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.instance_id) : h('span', { class: 'text-slate-400 dark:text-slate-500 text-xs' }, '未绑定') } },
     {
       title: '状态',
       key: 'status',
+      width: 90,
       sorter: (a: any, b: any) => (a.details?.status || '').localeCompare(b.details?.status || ''),
       render(row: any) {
         const isAssigned = row.details.status === 'InUse'
@@ -463,6 +487,7 @@ const eipColumns = computed(() => {
     {
       title: '创建时间',
       key: 'creation_time',
+      width: 145,
       sorter: (a: any, b: any) => {
         const ta = a.details?.allocation_time || a.details?.create_time || a.details?.creation_time || ''
         const tb = b.details?.allocation_time || b.details?.create_time || b.details?.creation_time || ''
@@ -470,7 +495,7 @@ const eipColumns = computed(() => {
       },
       render(row: any) {
         const timeVal = row.details.allocation_time || row.details.create_time || row.details.creation_time
-        return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, formatDate(timeVal))
+        return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, formatDate(timeVal))
       }
     }
   ]
@@ -480,11 +505,12 @@ const eipColumns = computed(() => {
 const domainColumns = computed(() => {
   const visible = resourceStore.visibleColumns.Domain
   const list = [
-    { type: 'selection' as const },
+    { type: 'selection' as const, width: 36 },
     accountColumn,
     {
       title: '域名',
       key: 'domain_name',
+      minWidth: 160,
       sorter: (a: any, b: any) => {
         const da = a.details?.domain_name_unicode || a.details?.domain_name || ''
         const db = b.details?.domain_name_unicode || b.details?.domain_name || ''
@@ -497,29 +523,49 @@ const domainColumns = computed(() => {
 
         if (parsed.punycode && parsed.primary !== parsed.punycode) {
           return h('div', { class: 'flex flex-col justify-center py-0.5' }, [
-            h('span', { class: 'font-bold text-slate-800 dark:text-slate-100 text-[11.5px] leading-tight' }, parsed.primary),
-            h('span', { class: 'font-mono text-[10.5px] text-slate-400 dark:text-slate-500 font-medium' }, parsed.punycode)
+            h('span', { class: 'font-normal text-slate-800 dark:text-slate-100 text-[13px] leading-tight whitespace-nowrap' }, parsed.primary),
+            h('span', { class: 'font-mono text-xs text-slate-400 dark:text-slate-500 font-normal whitespace-nowrap' }, parsed.punycode)
           ])
         }
 
-        return h('span', { class: 'font-semibold text-slate-800 dark:text-slate-100 text-[11.5px]' }, parsed.primary)
+        return h('span', { class: 'font-normal text-slate-800 dark:text-slate-100 text-[13px] whitespace-nowrap' }, parsed.primary)
+      }
+    },
+    {
+      title: '域名持有者',
+      key: 'registrant',
+      minWidth: 140,
+      sorter: (a: any, b: any) => {
+        const ra = a.details?.registrant || ''
+        const rb = b.details?.registrant || ''
+        return ra.localeCompare(rb, 'zh-CN')
+      },
+      render(row: any) {
+        const reg = row.details?.registrant
+        return h('span', {
+          class: 'text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap',
+          title: reg || '-'
+        }, reg || '-')
       }
     },
     {
       title: '注册日期',
       key: 'registration_date',
+      width: 115,
       sorter: (a: any, b: any) => (a.details?.registration_date || '').localeCompare(b.details?.registration_date || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.registration_date || '-') }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.registration_date || '-') }
     },
     {
       title: '过期日期',
       key: 'expiration_date',
+      width: 115,
       sorter: (a: any, b: any) => (a.details?.expiration_date || '').localeCompare(b.details?.expiration_date || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.expiration_date || '-') }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.expiration_date || '-') }
     },
     {
       title: '剩余天数',
       key: 'remaining_days',
+      width: 95,
       sorter: (a: any, b: any) => {
         const da = a.details?.expiration_date ? dayjs(a.details.expiration_date).startOf('day').diff(dayjs().startOf('day'), 'day') : 99999
         const db = b.details?.expiration_date ? dayjs(b.details.expiration_date).startOf('day').diff(dayjs().startOf('day'), 'day') : 99999
@@ -527,7 +573,7 @@ const domainColumns = computed(() => {
       },
       render(row: any) {
         const expDate = row.details.expiration_date
-        if (!expDate) return h('span', { class: 'text-slate-400 text-[11px]' }, '-')
+        if (!expDate) return h('span', { class: 'text-slate-400 text-xs' }, '-')
         const days = dayjs(expDate).startOf('day').diff(dayjs().startOf('day'), 'day')
         let type: 'success' | 'warning' | 'error' | 'info' = 'success'
         if (days <= settingStore.criticalDays) {
@@ -547,23 +593,26 @@ const domainColumns = computed(() => {
 const sslColumns = computed(() => {
   const visible = resourceStore.visibleColumns.SSL
   const list = [
-    { type: 'selection' as const },
+    { type: 'selection' as const, width: 36 },
     accountColumn,
     {
       title: '证书名称',
       key: 'cert_name',
+      minWidth: 140,
       sorter: (a: any, b: any) => (a.details?.cert_name || '').localeCompare(b.details?.cert_name || ''),
-      render(row: any) { return h('span', { class: 'font-semibold text-slate-800 dark:text-slate-100 text-[11.5px]' }, row.details.cert_name || '-') }
+      render(row: any) { return h('span', { class: 'font-normal text-slate-800 dark:text-slate-100 text-[13px] whitespace-nowrap' }, row.details.cert_name || '-') }
     },
     {
       title: '关联域名',
       key: 'domain',
+      minWidth: 150,
       sorter: (a: any, b: any) => (a.details?.domain || '').localeCompare(b.details?.domain || ''),
-      render(row: any) { return h('span', { class: 'text-[11.5px] text-slate-700 dark:text-slate-300' }, row.details.domain || '-') }
+      render(row: any) { return h('span', { class: 'text-xs text-slate-700 dark:text-slate-300 whitespace-nowrap' }, row.details.domain || '-') }
     },
     {
       title: '证书类型',
       key: 'cert_type',
+      width: 90,
       sorter: (a: any, b: any) => (a.details?.cert_type || '').localeCompare(b.details?.cert_type || ''),
       render(row: any) {
         const type = row.details.cert_type || 'DV'
@@ -573,32 +622,36 @@ const sslColumns = computed(() => {
         } else if (type.toUpperCase().includes('EV')) {
           bgClass = 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
         } else if (type.toUpperCase().includes('OV')) {
-          bgClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400 font-bold'
+          bgClass = 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
         }
-        return h('span', { class: `text-[11px] px-2 py-0.5 rounded font-semibold ${bgClass} whitespace-nowrap` }, type)
+        return h('span', { class: `text-xs px-2 py-0.5 rounded font-normal ${bgClass} whitespace-nowrap` }, type)
       }
     },
     {
       title: '证书品牌',
       key: 'brand',
+      width: 95,
       sorter: (a: any, b: any) => (a.details?.brand || '').localeCompare(b.details?.brand || ''),
-      render(row: any) { return h('span', { class: 'text-[11.5px] text-slate-600 dark:text-slate-400' }, row.details.brand || '-') }
+      render(row: any) { return h('span', { class: 'text-xs text-slate-600 dark:text-slate-400 whitespace-nowrap' }, row.details.brand || '-') }
     },
     {
       title: '生效时间',
       key: 'cert_start_time',
+      width: 105,
       sorter: (a: any, b: any) => (a.details?.cert_start_time || '').localeCompare(b.details?.cert_start_time || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.cert_start_time || '-') }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.cert_start_time || '-') }
     },
     {
       title: '到期时间',
       key: 'cert_end_time',
+      width: 105,
       sorter: (a: any, b: any) => (a.details?.cert_end_time || '').localeCompare(b.details?.cert_end_time || ''),
-      render(row: any) { return h('span', { class: 'font-mono text-[11px] text-slate-600 dark:text-slate-300' }, row.details.cert_end_time || '-') }
+      render(row: any) { return h('span', { class: 'font-mono text-xs text-slate-600 dark:text-slate-300 whitespace-nowrap' }, row.details.cert_end_time || '-') }
     },
     {
       title: '剩余天数',
       key: 'remaining_days',
+      width: 95,
       sorter: (a: any, b: any) => {
         const da = a.details?.cert_end_time ? dayjs(a.details.cert_end_time).startOf('day').diff(dayjs().startOf('day'), 'day') : 99999
         const db = b.details?.cert_end_time ? dayjs(b.details.cert_end_time).startOf('day').diff(dayjs().startOf('day'), 'day') : 99999
@@ -606,7 +659,7 @@ const sslColumns = computed(() => {
       },
       render(row: any) {
         const expDate = row.details.cert_end_time
-        if (!expDate) return h('span', { class: 'text-slate-400 text-[11px]' }, '-')
+        if (!expDate) return h('span', { class: 'text-slate-400 text-xs' }, '-')
         const days = dayjs(expDate).startOf('day').diff(dayjs().startOf('day'), 'day')
         const threshold = settingStore.warningDaysThreshold
         let type: 'success' | 'warning' | 'error' = 'success'
@@ -621,9 +674,10 @@ const sslColumns = computed(() => {
     {
       title: '证书状态',
       key: 'status',
+      width: 95,
       render(row: any) {
         const expDate = row.details.cert_end_time
-        if (!expDate) return h('span', { class: 'text-slate-400 text-[11px]' }, '-')
+        if (!expDate) return h('span', { class: 'text-slate-400 text-xs' }, '-')
         const days = dayjs(expDate).startOf('day').diff(dayjs().startOf('day'), 'day')
         const threshold = settingStore.warningDaysThreshold
         let label = '正常'
@@ -632,7 +686,7 @@ const sslColumns = computed(() => {
           label = '已过期'
           type = 'error'
         } else if (days <= threshold) {
-          label = '即将过期'
+          label = '即将到期'
           type = 'warning'
         }
         return h(NTag, { size: 'small', type }, { default: () => label })
@@ -730,13 +784,20 @@ function formatDate(dateStr?: string | null): string {
 </script>
 
 <style scoped>
+/* ── 设计工程动效曲线变量 ── */
 .asset-shell {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   background:
     radial-gradient(circle at 88% 0%, rgba(22, 119, 255, 0.045), transparent 28rem),
     transparent;
 }
 
+/* 资产数量徽标微交互 */
 .asset-count {
+  display: inline-flex;
+  align-items: center;
   padding: 2px 7px;
   border-radius: 5px;
   background: #eff6ff;
@@ -744,27 +805,47 @@ function formatDate(dateStr?: string | null): string {
   font-size: 10px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+  transition: transform 180ms var(--ease-out), background-color 200ms ease, color 200ms ease;
 }
 
 .resource-panel {
   box-shadow: 0 8px 28px rgba(30, 64, 175, 0.045);
+  transition: box-shadow 200ms ease;
 }
 
 .resource-table {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── 浅色主题下的表格样式（默认，无需 html:not(.dark) 选择器） ── */
+/* ── 按钮与交互元素物理触感 (:active 缩放) ── */
+.asset-shell :deep(.n-button) {
+  transition: transform 160ms var(--ease-out), background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+.asset-shell :deep(.n-button:active) {
+  transform: scale(0.97) !important;
+}
+
+.asset-shell .cursor-pointer {
+  transition: transform 140ms var(--ease-out), opacity 140ms ease;
+}
+
+.asset-shell .cursor-pointer:active {
+  transform: scale(0.88);
+}
+
+/* ── 表格通用样式（浅色默认） ── */
 .resource-table :deep(.n-data-table-th) {
   height: 38px;
-  padding: 8px 14px;
+  padding: 6px 10px !important;
   background: #ffffff !important;
-  color: #475569;
+  color: #334155;
   font-size: 13px !important;
   font-weight: 600;
+  white-space: nowrap !important;
   letter-spacing: 0.01em;
   border-bottom: 1.5px solid #e2e8f0;
-  transition: color 0.2s ease;
+  transition: color 180ms var(--ease-out);
 }
 
 .resource-table :deep(.n-data-table-th--sortable:hover) {
@@ -783,50 +864,56 @@ function formatDate(dateStr?: string | null): string {
 }
 
 .resource-table :deep(.n-data-table-td) {
-  height: 44px;
-  padding: 9px 14px;
+  height: 40px;
+  padding: 6px 10px !important;
   background: #ffffff !important;
-  color: #334155;
+  color: #1e293b;
   font-size: 13px !important;
-  line-height: 1.45;
+  line-height: 1.4;
+  white-space: nowrap !important;
   border-bottom: 1px solid #f1f5f9;
-  transition: background-color 0.18s ease;
+  transition: background-color 160ms var(--ease-out);
 }
 
-.resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
-  background: #f8fafc !important;
+/* 触控防误触媒体查询 */
+@media (hover: hover) and (pointer: fine) {
+  .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+    background: #f8fafc !important;
+  }
 }
 
 .resource-table :deep(.n-data-table-sorter) {
   margin-left: 4px;
   color: #94a3b8;
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s ease;
+  transition: transform 200ms var(--ease-out), color 180ms ease;
 }
 
 .resource-table :deep(.n-data-table-tr) {
-  transition: background-color 0.18s ease;
+  transition: background-color 160ms var(--ease-out);
 }
 
+/* 避免使用 transition: all，严格限定属性 */
 .resource-table :deep(.n-tag) {
-  height: 24px;
+  height: 22px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: 4px;
   font-size: 12px !important;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
 }
 
 .resource-panel :deep(.n-tabs-tab) {
   min-height: 34px;
-  font-size: 13px !important;
+  font-size: 13.5px !important;
   font-weight: 600;
+  transition: color 180ms var(--ease-out), background-color 180ms ease;
 }
 
 .resource-panel :deep(.n-pagination) {
-  font-size: 12px;
+  font-size: 13px;
 }
 
-/* ── 深色主题下的表格样式（用 :global(.dark) 匹配 html 上的 .dark 类） ── */
+/* ── 深色主题下的表格样式 ── */
 :global(.dark) .asset-count {
   background: rgba(37, 99, 235, 0.16);
   color: #93c5fd;
@@ -838,11 +925,12 @@ function formatDate(dateStr?: string | null): string {
 
 :global(.dark) .resource-table :deep(.n-data-table-th) {
   height: 38px;
-  padding: 8px 14px;
+  padding: 6px 10px !important;
   background: #111827 !important;
   color: #94a3b8 !important;
   font-size: 13px !important;
   font-weight: 600;
+  white-space: nowrap !important;
   letter-spacing: 0.01em;
   border-bottom: 1.5px solid rgba(51, 65, 85, 0.6) !important;
 }
@@ -863,16 +951,20 @@ function formatDate(dateStr?: string | null): string {
 }
 
 :global(.dark) .resource-table :deep(.n-data-table-td) {
-  height: 44px;
-  padding: 9px 14px;
+  height: 40px;
+  padding: 6px 10px !important;
   background: #111827 !important;
-  color: #cbd5e1 !important;
+  color: #e2e8f0 !important;
   font-size: 13px !important;
-  line-height: 1.45;
+  line-height: 1.4;
+  white-space: nowrap !important;
   border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
+  transition: background-color 160ms var(--ease-out);
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
-  background: #1f2937 !important;
+@media (hover: hover) and (pointer: fine) {
+  :global(.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+    background: #1f2937 !important;
+  }
 }
 </style>

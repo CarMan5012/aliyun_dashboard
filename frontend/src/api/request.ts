@@ -6,6 +6,14 @@ const request: AxiosInstance = axios.create({
   timeout: 30000,
 })
 
+request.interceptors.request.use((config) => {
+  const pwd = localStorage.getItem('aliyun_dashboard_settings_pwd')
+  if (pwd) {
+    config.headers['X-Settings-Password'] = pwd
+  }
+  return config
+})
+
 request.interceptors.response.use(
   (response: AxiosResponse) => {
     return response

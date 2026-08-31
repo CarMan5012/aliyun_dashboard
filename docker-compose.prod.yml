@@ -1,0 +1,26 @@
+services:
+  backend:
+    image: carman5012/aliyun-dashboard-backend:latest
+    container_name: aliyun-dashboard-backend
+    restart: always
+    expose:
+      - "8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DB_TYPE=sqlite
+      - SQLITE_DB_PATH=/app/data/aliyun.db
+      - "ASSETVISTA_MASTER_KEY=${ASSETVISTA_MASTER_KEY:?Error: ASSETVISTA_MASTER_KEY must be set}"
+      - "SETTINGS_ADMIN_PASSWORD=${SETTINGS_ADMIN_PASSWORD:?Error: SETTINGS_ADMIN_PASSWORD must be set}"
+      - TZ=Asia/Shanghai
+
+  frontend:
+    image: carman5012/aliyun-dashboard-frontend:latest
+    container_name: aliyun-dashboard-frontend
+    restart: always
+    ports:
+      - "81:80"
+    environment:
+      - "SETTINGS_ADMIN_PASSWORD=${SETTINGS_ADMIN_PASSWORD:?Error: SETTINGS_ADMIN_PASSWORD must be set}"
+    depends_on:
+      - backend

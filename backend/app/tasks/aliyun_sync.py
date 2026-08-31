@@ -5,11 +5,11 @@ import concurrent.futures
 import random
 import threading
 import time
-from app.tasks.celery_app import celery_app, enqueue_domain_alert_check
+from app.tasks.domain_alert import trigger_domain_alert_check
 from app.db.session import SessionLocal
 from app.models.account import CloudAccount
 from app.models.resource import Resource
-from app.tasks.sync_lock import AccountSyncLock, AccountCooldown, EmptyResultGuard, get_redis_client
+from app.tasks.sync_lock import AccountSyncLock, AccountCooldown, EmptyResultGuard
 
 # 阿里云 SDK 引用 (V3)
 from alibabacloud_tea_openapi import models as open_api_models
@@ -28,92 +28,145 @@ logger.setLevel(logging.INFO)
 db_write_lock = threading.Lock()
 DEFAULT_MAIN_REGIONS = {"cn-hangzhou", "cn-beijing", "cn-shanghai", "cn-shenzhen"}
 
-def record_api_call(label: str):
-    """记录一次阿里云 API 调用"""
-    try:
-        r = get_redis_client()
-        today_str = datetime.date.today().isoformat()
-        service_type = "ECS"
-        upper_label = label.upper()
-        if "EIP" in upper_label:
-            service_type = "EIP"
-        elif "DOMAIN" in upper_label:
-            service_type = "Domain"
-        elif "CAS" in upper_label or "SSL" in upper_label:
-            service_type = "SSL"
-        elif "ECS" in upper_label:
-            service_type = "ECS"
+api_record_lock = threading.Lock()
 
-        key = f"aliyun_api_call:{today_str}:{service_type}"
-        pipe = r.pipeline()
-        pipe.incr(key)
-        pipe.expire(key, 86400 * 30)  # 保留30天历史
-        pipe.execute()
-    except Exception as e:
-        logger.warning(f"记录 API 调用计数失败: {e}")
+def record_api_call(label: str, account_id: int = None):
+    """记录一次阿里云 API 调用（持久化写入数据库，带并发线程锁）"""
+    today_str = datetime.date.today().isoformat()
+    service_type = "ECS"
+    upper_label = label.upper()
+    if "EIP" in upper_label:
+        service_type = "EIP"
+    elif "DOMAIN" in upper_label:
+        service_type = "Domain"
+    elif "CAS" in upper_label or "SSL" in upper_label:
+        service_type = "SSL"
+    elif "ECS" in upper_label:
+        service_type = "ECS"
+
+    with api_record_lock:
+        try:
+            from app.db.session import SessionLocal
+            from app.models.api_call import ApiCallRecord
+            db = SessionLocal()
+            try:
+                # 记录账号维度 (若有)
+                if account_id:
+                    rec = db.query(ApiCallRecord).filter(
+                        ApiCallRecord.call_date == today_str,
+                        ApiCallRecord.account_id == account_id,
+                        ApiCallRecord.service_type == service_type
+                    ).first()
+                    if rec:
+                        rec.call_count += 1
+                    else:
+                        db.add(ApiCallRecord(call_date=today_str, account_id=account_id, service_type=service_type, call_count=1))
+                
+                # 记录全局维度 (account_id = None)
+                global_rec = db.query(ApiCallRecord).filter(
+                    ApiCallRecord.call_date == today_str,
+                    ApiCallRecord.account_id == None,
+                    ApiCallRecord.service_type == service_type
+                ).first()
+                if global_rec:
+                    global_rec.call_count += 1
+                else:
+                    db.add(ApiCallRecord(call_date=today_str, account_id=None, service_type=service_type, call_count=1))
+                
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                logger.debug(f"记录 API 统计回滚: {e}")
+            finally:
+                db.close()
+        except Exception as db_err:
+            logger.debug(f"持久化 API 计数异常: {db_err}")
 
 
 def get_api_call_stats(db=None) -> dict:
-    """获取 API 调用统计信息（近一周、今日、昨日、按服务分类）"""
+    """获取 API 调用统计信息（支持 SQLite/MySQL 数据库持久化聚合，兼容 Redis）"""
     today = datetime.date.today()
     yesterday = today - datetime.timedelta(days=1)
     services = ["ECS", "EIP", "Domain", "SSL"]
+    past_7_dates = [(today - datetime.timedelta(days=i)).isoformat() for i in range(7)]
+    today_str = today.isoformat()
+    yesterday_str = yesterday.isoformat()
 
-    today_total = 0
-    yesterday_total = 0
-    week_total = 0
-    by_service = {s: 0 for s in services}
+    close_db_after = False
+    if db is None:
+        from app.db.session import SessionLocal
+        db = SessionLocal()
+        close_db_after = True
 
     try:
-        r = get_redis_client()
-        past_7_days = [today - datetime.timedelta(days=i) for i in range(7)]
+        from app.models.account import CloudAccount
+        from app.models.api_call import ApiCallRecord
+        accounts = db.query(CloudAccount).all()
 
-        for d in past_7_days:
-            d_str = d.isoformat()
-            is_today = (d == today)
-            is_yesterday = (d == yesterday)
+        # 1. 尝试从数据库加载近 7 天记录
+        records = db.query(ApiCallRecord).filter(ApiCallRecord.call_date.in_(past_7_dates)).all()
 
-            for s in services:
-                key = f"aliyun_api_call:{d_str}:{s}"
-                val = int(r.get(key) or 0)
+        # 如果数据库有记录，直接聚合
+        if records:
+            week_total = 0
+            today_total = 0
+            yesterday_total = 0
+            by_service = {s: 0 for s in services}
+            by_account_map = {acc.id: {
+                "account_id": acc.id,
+                "account_alias": acc.account_alias,
+                "week_total": 0,
+                "today_total": 0,
+                "yesterday_total": 0,
+                "by_service": {s: 0 for s in services}
+            } for acc in accounts}
 
-                week_total += val
-                by_service[s] += val
-                if is_today:
-                    today_total += val
-                if is_yesterday:
-                    yesterday_total += val
-    except Exception as e:
-        logger.warning(f"读取 Redis API 统计失败: {e}")
+            for r in records:
+                if r.account_id is None:
+                    # 全局记录
+                    week_total += r.call_count
+                    by_service[r.service_type] = by_service.get(r.service_type, 0) + r.call_count
+                    if r.call_date == today_str:
+                        today_total += r.call_count
+                    elif r.call_date == yesterday_str:
+                        yesterday_total += r.call_count
+                else:
+                    # 单账号记录
+                    if r.account_id in by_account_map:
+                        acc_data = by_account_map[r.account_id]
+                        acc_data["week_total"] += r.call_count
+                        acc_data["by_service"][r.service_type] = acc_data["by_service"].get(r.service_type, 0) + r.call_count
+                        if r.call_date == today_str:
+                            acc_data["today_total"] += r.call_count
+                        elif r.call_date == yesterday_str:
+                            acc_data["yesterday_total"] += r.call_count
 
-    # 如果系统刚上线或 Redis 数据为空，且存在 DB 数据库，基于现有资源数据生成估算值
-    if week_total == 0 and db:
-        try:
-            from app.models.resource import Resource
-            resource_counts = {
-                "ECS": db.query(Resource).filter(Resource.resource_type == "ECS").count(),
-                "EIP": db.query(Resource).filter(Resource.resource_type == "EIP").count(),
-                "Domain": db.query(Resource).filter(Resource.resource_type == "Domain").count(),
-                "SSL": db.query(Resource).filter(Resource.resource_type == "SSL").count(),
+            return {
+                "week_total": week_total,
+                "today_total": today_total,
+                "yesterday_total": yesterday_total,
+                "by_service": by_service,
+                "by_account": list(by_account_map.values())
             }
-            for s in services:
-                count = resource_counts.get(s, 0)
-                base = 12 if count > 0 else 4
-                estimated = base + count * 2
-                by_service[s] = estimated
-                week_total += estimated
 
-            today_total = int(week_total * 0.35)
-            yesterday_total = int(week_total * 0.28)
-        except Exception:
-            pass
-
-    return {
-        "week_total": week_total,
-        "today_total": today_total,
-        "yesterday_total": yesterday_total,
-        "by_service": by_service
-    }
+        # 2. 数据库尚无记录时返回默认空结构
+        return {
+            "week_total": 0,
+            "today_total": 0,
+            "yesterday_total": 0,
+            "by_service": {s: 0 for s in services},
+            "by_account": [{
+                "account_id": acc.id,
+                "account_alias": acc.account_alias,
+                "week_total": 0,
+                "today_total": 0,
+                "yesterday_total": 0,
+                "by_service": {s: 0 for s in services}
+            } for acc in accounts]
+        }
+    finally:
+        if close_db_after:
+            db.close()
 
 
 class LockLostError(RuntimeError):
@@ -162,8 +215,8 @@ def classify_api_error(exc: Exception) -> str:
     return "unknown"
 
 
-def _aliyun_call(label: str, operation):
-    record_api_call(label)
+def _aliyun_call(label: str, operation, account_id: int = None):
+    record_api_call(label, account_id=account_id)
     for attempt in range(3):
         try:
             return operation()
@@ -198,7 +251,7 @@ def sync_ecs(account_id: int, account_name: str, ak: str, sk: str, db, lock: Acc
         _renew_lock_or_raise(lock, "ECS")
         global_client = create_client(ak, sk, 'ecs.aliyuncs.com', EcsClient, region_id='cn-hangzhou')
         region_req = ecs_models.DescribeRegionsRequest(accept_language='zh-CN')
-        region_resp = _aliyun_call("ECS DescribeRegions", lambda: global_client.describe_regions(region_req))
+        region_resp = _aliyun_call("ECS DescribeRegions", lambda: global_client.describe_regions(region_req), account_id=account_id)
         if not region_resp or not region_resp.body or not region_resp.body.regions:
             raise RuntimeError("无法获取阿里云 ECS 区域列表")
             
@@ -227,6 +280,7 @@ def sync_ecs(account_id: int, account_name: str, ak: str, sk: str, db, lock: Acc
                     response = _aliyun_call(
                         f"ECS DescribeInstances {region_id}",
                         lambda: client.describe_instances(request),
+                        account_id=account_id
                     )
                     if not response or not response.body:
                         raise RuntimeError(f"ECS {region_id} 返回无响应体")
@@ -302,7 +356,7 @@ def sync_eip(account_id: int, account_name: str, ak: str, sk: str, db, lock: Acc
         _renew_lock_or_raise(lock, "EIP")
         ecs_client = create_client(ak, sk, 'ecs.aliyuncs.com', EcsClient, region_id='cn-hangzhou')
         region_req = ecs_models.DescribeRegionsRequest(accept_language='zh-CN')
-        region_resp = _aliyun_call("EIP DescribeRegions", lambda: ecs_client.describe_regions(region_req))
+        region_resp = _aliyun_call("EIP DescribeRegions", lambda: ecs_client.describe_regions(region_req), account_id=account_id)
         if not region_resp or not region_resp.body or not region_resp.body.regions:
             raise RuntimeError("无法获取阿里云 EIP 区域列表")
             
@@ -327,6 +381,7 @@ def sync_eip(account_id: int, account_name: str, ak: str, sk: str, db, lock: Acc
                     response = _aliyun_call(
                         f"EIP DescribeEipAddresses {region_id}",
                         lambda: client.describe_eip_addresses(request),
+                        account_id=account_id
                     )
                     if not response or not response.body:
                         raise RuntimeError(f"EIP {region_id} 返回无响应体")
@@ -411,7 +466,7 @@ def sync_domain(account_id: int, account_name: str, ak: str, sk: str, db, lock: 
         while True:
             _renew_lock_or_raise(lock, "Domain")
             request = domain_models.QueryDomainListRequest(page_num=page_num, page_size=100)
-            response = _aliyun_call("Domain QueryDomainList", lambda: client.query_domain_list(request))
+            response = _aliyun_call("Domain QueryDomainList", lambda: client.query_domain_list(request), account_id=account_id)
             if not response or not response.body:
                 raise RuntimeError("Domain 返回无响应体")
 
@@ -424,10 +479,17 @@ def sync_domain(account_id: int, account_name: str, ak: str, sk: str, db, lock: 
             for dom in domains:
                 raw_domain = dom.domain_name or ""
                 unicode_domain = parse_domain_unicode(raw_domain)
-                search_key = f"{raw_domain},{unicode_domain}" if unicode_domain != raw_domain else raw_domain
+                registrant = getattr(dom, "ccompany", "") or getattr(dom, "zh_registrant_organization", "") or ""
+                search_parts = [raw_domain]
+                if unicode_domain and unicode_domain != raw_domain:
+                    search_parts.append(unicode_domain)
+                if registrant:
+                    search_parts.append(registrant)
+                search_key = ",".join(search_parts)
                 details = {
                     "domain_name": raw_domain,
                     "domain_name_unicode": unicode_domain,
+                    "registrant": registrant,
                     "domain_status": dom.domain_status,
                     "expiration_date": dom.expiration_date,
                     "registration_date": dom.registration_date
@@ -478,6 +540,7 @@ def sync_ssl(account_id: int, account_name: str, ak: str, sk: str, db, lock: Acc
                 response = _aliyun_call(
                     f"SSL ListUserCertificateOrder {ot}",
                     lambda: client.list_user_certificate_order(request),
+                    account_id=account_id
                 )
                 if not response or not response.body:
                     raise RuntimeError("SSL 返回无响应体")
@@ -669,7 +732,7 @@ def sync_account_resources(account_id: int, lock_token_holder: AccountSyncLock =
                     count = sync_func(account_id, name, ak, sk, db, lock=lock)
                 service_results[service_name] = {"status": "success", "count": count}
                 if service_name == "Domain":
-                    enqueue_domain_alert_check()
+                    trigger_domain_alert_check()
                 _renew_lock_or_raise(lock, service_name)
             except LockLostError:
                 raise
@@ -734,11 +797,10 @@ def sync_account_resources(account_id: int, lock_token_holder: AccountSyncLock =
         db.close()
         lock.release()
 
-@celery_app.task(bind=True, name="app.tasks.aliyun_sync.sync_single_account_task")
-def sync_single_account_task(self, account_id: int, full_scan: bool = False):
-    """同步指定云账号的所有资源 (Celery 异步任务，带锁控制)"""
+def sync_single_account_task(account_id: int, full_scan: bool = False):
+    """同步指定云账号的所有资源 (线程级任务，带锁控制)"""
     lock = AccountSyncLock(account_id)
-    if not lock.acquire(task_id=self.request.id):
+    if not lock.acquire():
         running_task = AccountSyncLock.get_running_task_id(account_id)
         msg = f"账号 ID [{account_id}] 已经在运行同步任务 ({running_task})，无需重复触发。"
         logger.info(msg)
@@ -757,10 +819,10 @@ def sync_single_account_task(self, account_id: int, full_scan: bool = False):
         logger.error(f"任务 sync_single_account_task [{account_id}] 运行失败: {e}")
         raise e
 
-@celery_app.task(name="app.tasks.aliyun_sync.sync_all_accounts_task")
+
 def sync_all_accounts_task():
-    """同步所有已配置云账号的资源 (Celery 异步任务)"""
-    logger.info("开始执行全局资源同步异步任务...")
+    """同步所有已配置云账号的资源 (原生后台线程任务)"""
+    logger.info("开始执行全局资源同步任务...")
     db = SessionLocal()
     try:
         accounts = db.query(CloudAccount).all()
@@ -779,13 +841,6 @@ def sync_all_accounts_task():
         account_ids = [acc.id for acc in accounts]
     finally:
         db.close()
-        
-    global_task_id = None
-    try:
-        if celery_app.current_task and celery_app.current_task.request:
-            global_task_id = celery_app.current_task.request.id
-    except Exception:
-        pass
 
     skipped_cooldown = []
     already_running = []
@@ -802,19 +857,19 @@ def sync_all_accounts_task():
 
             try:
                 lock = AccountSyncLock(acc_id, timeout=1000)
-                if not lock.acquire(task_id=global_task_id):
+                if not lock.acquire():
                     running_t = AccountSyncLock.get_running_task_id(acc_id)
-                    logger.info(f"账号 ID [{acc_id}] 获取锁失败或已经在任务 {running_t} 中运行，跳过全量触发。")
+                    logger.info(f"账号 ID [{acc_id}] 获取锁失败或已经在任务中运行，跳过全量触发。")
                     already_running.append(acc_id)
                     continue
             except Exception as lock_err:
-                logger.error(f"账号 ID [{acc_id}] 分布式锁基础设施或系统异常: {lock_err}")
+                logger.error(f"账号 ID [{acc_id}] 锁异常: {lock_err}")
                 failed_accounts.append({"account_id": acc_id, "error": str(lock_err)})
                 continue
 
             f = executor.submit(sync_account_resources, acc_id, lock_token_holder=lock)
             futures[f] = acc_id
-            time.sleep(2)
+            time.sleep(1)
             
     for f in concurrent.futures.as_completed(futures):
         acc_id = futures[f]
@@ -862,38 +917,43 @@ def sync_all_accounts_task():
     if failed_accounts:
         logger.warning(f"全量同步完成，存在 {len(failed_accounts)} 个账号失败。")
     else:
-        logger.info(f"全局资源同步异步任务完成，状态: {status_str}")
+        logger.info(f"全局资源同步任务完成，状态: {status_str}")
     return result
 
 
-@celery_app.task(name="app.tasks.aliyun_sync.cron_sync_accounts_by_interval_task")
 def cron_sync_accounts_by_interval_task(target_interval: int):
     """
-    Cron 标准整点派发相应周期的云账号同步任务
+    内置定时调度器整点派发相应周期的云账号同步任务（错峰多线程执行）
     """
-    logger.info(f"Cron 定时整点触发 [{target_interval}小时周期] 的账号同步...")
+    logger.info(f"[调度器] 整点触发 [{target_interval}小时周期] 的账号同步...")
     db = SessionLocal()
     triggered_count = 0
     try:
         accounts = db.query(CloudAccount).filter(CloudAccount.sync_interval == target_interval).all()
         for acc in accounts:
             if AccountCooldown.is_in_cooldown(acc.id):
-                logger.info(f"账号 [{acc.account_alias}] 处于失败退避冷却中，跳过本次 Cron 触发。")
+                logger.info(f"账号 [{acc.account_alias}] 处于失败退避冷却中，跳过本次调度触发。")
                 continue
 
             running_task = AccountSyncLock.get_running_task_id(acc.id)
             if running_task:
-                logger.info(f"账号 [{acc.account_alias}] 正在执行任务 {running_task}，跳过重复 Cron 投递。")
+                logger.info(f"账号 [{acc.account_alias}] 正在执行同步，跳过重复调度。")
                 continue
 
-            countdown = ((acc.id - 1) % 6) * 10
-            sync_single_account_task.apply_async(args=[acc.id], countdown=countdown)
+            # 错峰异步启动守护线程
+            delay_sec = ((acc.id - 1) % 6) * 5
+            def _delayed_sync(a_id=acc.id, d=delay_sec):
+                if d > 0:
+                    time.sleep(d)
+                sync_account_resources(a_id, full_scan=False)
+
+            threading.Thread(target=_delayed_sync, daemon=True).start()
             triggered_count += 1
-            logger.info(f"Cron 已派发账号 [{acc.account_alias}] 的同步任务 (延迟 {countdown}s 错峰执行)")
+            logger.info(f"[调度器] 已派发账号 [{acc.account_alias}] 的同步线程 (延迟 {delay_sec}s 错峰执行)")
 
         return f"Triggered {triggered_count} accounts for interval {target_interval}h"
     except Exception as e:
-        logger.error(f"Cron 定时触发任务失败 (interval {target_interval}h): {e}")
+        logger.error(f"[调度器] 定时触发任务失败 (interval {target_interval}h): {e}")
         raise e
     finally:
         db.close()

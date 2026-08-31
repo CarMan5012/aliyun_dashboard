@@ -1,5 +1,33 @@
-venv
-__pycache__
+# 虚拟环境
+venv/
+.venv/
+env/
+
+# Python 缓存与临时文件
+__pycache__/
+**/__pycache__/
 *.py[cod]
+*$py.class
+*.so
+
+# 测试与代码覆盖率
+.pytest_cache/
+.coverage
+htmlcov/
+app/tests/
+
+# 环境与敏感配置
 .env
-.pytest_cache
+.env.*
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# IDE 与系统文件
+.git/
+.gitignore
+.dockerignore
+.idea/
+.vscode/
+.DS_Store

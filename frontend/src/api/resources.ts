@@ -33,6 +33,20 @@ export async function fetchDbStatus(): Promise<boolean> {
   return data.is_empty
 }
 
+export interface AccountApiCallStat {
+  account_id: number
+  account_alias: string
+  week_total: number
+  today_total: number
+  yesterday_total: number
+  by_service: {
+    ECS: number
+    EIP: number
+    Domain: number
+    SSL: number
+  }
+}
+
 export interface ApiCallStats {
   week_total: number
   today_total: number
@@ -43,6 +57,7 @@ export interface ApiCallStats {
     Domain: number
     SSL: number
   }
+  by_account?: AccountApiCallStat[]
 }
 
 /** 获取阿里云 API 调用次数统计数据 */

@@ -9,8 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings as app_settings
 from app.db.session import get_db
 from app.models.domain_alert import DomainAlertSetting
-from app.tasks.celery_app import enqueue_domain_alert_check
-from app.tasks.domain_alert import send_dingtalk_markdown
+from app.tasks.domain_alert import trigger_domain_alert_check, send_dingtalk_markdown
 
 router = APIRouter()
 
@@ -91,10 +90,11 @@ class DomainAlertUpdate(BaseModel):
 
 
 def require_settings_admin(x_settings_password: Optional[str] = Header(None)) -> None:
-    expected = app_settings.SETTINGS_ADMIN_PASSWORD
+    expected = (app_settings.SETTINGS_ADMIN_PASSWORD or "").strip()
     if not expected:
-        raise HTTPException(status_code=503, detail="服务端尚未配置设置管理口令")
-    if not x_settings_password or not hmac.compare_digest(x_settings_password, expected):
+        # 服务端未配置口令时，默认允许内网管理操作（免密模式）
+        return
+    if not x_settings_password or not hmac.compare_digest(x_settings_password.strip(), expected):
         raise HTTPException(status_code=403, detail="设置管理口令错误")
 
 
@@ -164,7 +164,7 @@ def update_domain_alert_setting(payload: DomainAlertUpdate, db: Session = Depend
     db.commit()
     db.refresh(config)
     if config.enabled:
-        enqueue_domain_alert_check()
+        trigger_domain_alert_check()
     return {"status": "success", "data": public_setting(config)}
 
 

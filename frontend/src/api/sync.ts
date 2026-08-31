@@ -7,8 +7,10 @@ export async function triggerSync(): Promise<SyncSubmitResponse> {
   return data
 }
 
-/** 查询 Celery 异步同步任务的执行状态 */
-export async function fetchTaskStatus(taskId: string): Promise<TaskStatusResponse> {
-  const { data } = await request.get<TaskStatusResponse>(`/tasks/${taskId}`)
+/** 查询异步同步任务的执行状态 */
+export async function fetchTaskStatus(taskId: string, accountId?: number): Promise<TaskStatusResponse> {
+  const params: Record<string, any> = {}
+  if (accountId !== undefined && accountId !== null) params.account_id = accountId
+  const { data } = await request.get<TaskStatusResponse>(`/tasks/${taskId}`, { params })
   return data
 }

@@ -65,11 +65,11 @@
       </n-button>
 
       <!-- 消息警报 -->
-      <div class="relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition">
+      <div class="bell-wrap relative cursor-pointer p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 transition">
         <n-popover trigger="click" placement="bottom-end" width="320">
           <template #trigger>
             <n-badge :value="notificationStore.unreadCount" :max="99" type="warning" :show="notificationStore.unreadCount > 0">
-              <Icon icon="lucide:bell" :width="18" />
+              <Icon icon="lucide:bell" :width="18" class="bell-icon" />
             </n-badge>
           </template>
           <div class="p-2 space-y-3">
@@ -104,7 +104,7 @@
 
       <!-- 用户信息 -->
       <div class="flex items-center gap-2.5 border-l border-borderLight dark:border-borderDark pl-4">
-        <img :src="authStore.user.avatar" class="w-8 h-8 rounded-full border border-borderLight dark:border-borderDark bg-slate-100 dark:bg-slate-950/40 p-0.5" />
+        <img :src="authStore.user.avatar" class="user-avatar w-8 h-8 rounded-full border border-borderLight dark:border-borderDark bg-slate-100 dark:bg-slate-950/40 p-0.5 cursor-pointer" />
         <div class="hidden md:flex flex-col select-none">
           <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">{{ authStore.user.username }}</span>
           <span class="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{{ authStore.user.role }}</span>
@@ -188,4 +188,34 @@ async function handleSync() {
   }
 }
 </script>
+
+<style scoped>
+.header-action-btn {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease;
+}
+
+.header-action-btn:active {
+  transform: scale(0.92);
+}
+
+.bell-wrap {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease;
+}
+
+.bell-wrap:hover .bell-icon {
+  transform: rotate(15deg);
+}
+
+.bell-icon {
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.user-avatar {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.user-avatar:hover {
+  transform: scale(1.06);
+}
+</style>
 

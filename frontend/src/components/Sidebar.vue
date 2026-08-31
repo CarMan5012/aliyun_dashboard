@@ -1,17 +1,17 @@
 <template>
   <aside
-    class="bg-white dark:bg-cardDark border-r border-borderLight dark:border-borderDark h-screen flex flex-col justify-between transition-all duration-300 z-30 flex-shrink-0"
+    class="sidebar-container bg-white dark:bg-cardDark border-r border-borderLight dark:border-borderDark h-screen flex flex-col justify-between z-30 flex-shrink-0"
     :class="[resourceStore.sidebarCollapsed ? 'w-[64px]' : 'w-[220px]']"
   >
     <!-- Logo 区域 -->
     <div class="h-[64px] flex items-center px-4 border-b border-borderLight dark:border-borderDark overflow-hidden flex-shrink-0">
       <div class="flex items-center gap-3 min-w-[200px]">
-        <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 shadow-sm">
+        <div class="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0 shadow-sm transition-transform duration-200 hover:scale-105 active:scale-95">
           <Icon icon="lucide:cloud" :width="18" />
         </div>
         <span
           v-show="!resourceStore.sidebarCollapsed"
-          class="font-bold text-sm tracking-wide text-slate-800 dark:text-slate-100 whitespace-nowrap"
+          class="font-bold text-sm tracking-wide text-slate-800 dark:text-slate-100 whitespace-nowrap logo-text"
         >
           云资源管理平台
         </span>
@@ -24,30 +24,30 @@
         v-for="item in menuItems"
         :key="item.path"
         @click="navigateTo(item.path)"
-        class="flex items-center gap-3 px-3.5 py-2.5 rounded-lg transition-all duration-200 cursor-pointer group no-underline border font-normal select-none"
+        class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-lg cursor-pointer group no-underline border font-normal select-none"
         :class="[
           isItemActive(item.path)
-            ? 'bg-primary/10 text-primary border-primary/20'
-            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40 border-transparent'
+            ? 'bg-primary/10 text-primary border-primary/20 font-semibold'
+            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent'
         ]"
       >
-        <Icon :icon="item.icon" :width="19" class="nav-icon flex-shrink-0 group-hover:scale-105 transition" />
+        <Icon :icon="item.icon" :width="19" class="nav-icon flex-shrink-0 group-hover:scale-110 group-active:scale-95 transition-transform" />
         <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">{{ item.name }}</span>
       </div>
     </nav>
 
     <!-- 底部区域 (主题切换 & 折叠 & 版本) -->
-    <div class="p-3 border-t border-borderLight dark:border-borderDark space-y-3">
+    <div class="p-3 border-t border-borderLight dark:border-borderDark space-y-2">
       <!-- 切换主题 -->
       <button
         @click="themeStore.toggleTheme()"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-all duration-200 bg-transparent border-0 cursor-pointer text-left font-normal"
+        class="bottom-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50 bg-transparent border-0 cursor-pointer text-left font-normal"
         title="切换主题"
       >
         <Icon
           :icon="themeStore.theme === 'dark' ? 'lucide:sun' : 'lucide:moon'"
           :width="19"
-          class="text-amber-500 flex-shrink-0"
+          class="theme-icon text-amber-500 flex-shrink-0"
         />
         <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">
           {{ themeStore.theme === 'dark' ? '浅色模式' : '深色模式' }}
@@ -57,12 +57,12 @@
       <!-- 折叠侧边栏 -->
       <button
         @click="resourceStore.sidebarCollapsed = !resourceStore.sidebarCollapsed"
-        class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/40 transition-all duration-200 bg-transparent border-0 cursor-pointer text-left font-normal"
+        class="bottom-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800/50 bg-transparent border-0 cursor-pointer text-left font-normal"
       >
         <Icon
           :icon="resourceStore.sidebarCollapsed ? 'lucide:chevron-right' : 'lucide:chevron-left'"
           :width="19"
-          class="flex-shrink-0"
+          class="collapse-icon flex-shrink-0"
         />
         <span v-show="!resourceStore.sidebarCollapsed" class="nav-label whitespace-nowrap">收起侧栏</span>
       </button>
@@ -70,7 +70,7 @@
       <!-- 系统版本 -->
       <div
         v-show="!resourceStore.sidebarCollapsed"
-        class="text-center text-[11px] text-slate-400 dark:text-slate-600 font-mono select-none"
+        class="text-center text-[11px] text-slate-400 dark:text-slate-600 font-mono select-none pt-1"
       >
         Version 2.1.0
       </div>
@@ -115,10 +115,46 @@ const menuItems = [
 </script>
 
 <style scoped>
-/*
- * 用 px 写死字体与图标尺寸，完全隔离 Naive UI :global() / rem 继承导致的侧边栏
- * 在不同路由间字体大小不一致的问题。
- */
+.sidebar-container {
+  transition: width 240ms cubic-bezier(0.32, 0.72, 0, 1), background-color 200ms ease, border-color 200ms ease;
+}
+
+.logo-text {
+  animation: fadeUp 200ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.nav-item {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.nav-item:active {
+  transform: scale(0.97);
+}
+
+.bottom-btn {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), background-color 160ms ease, color 160ms ease;
+}
+
+.bottom-btn:active {
+  transform: scale(0.97);
+}
+
+.theme-icon {
+  transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.bottom-btn:hover .theme-icon {
+  transform: rotate(20deg) scale(1.1);
+}
+
+.collapse-icon {
+  transition: transform 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.bottom-btn:hover .collapse-icon {
+  transform: translateX(-2px);
+}
+
 .nav-label {
   font-size: 14px !important;
   font-weight: 400;
@@ -129,5 +165,6 @@ const menuItems = [
 .nav-icon {
   width: 19px !important;
   height: 19px !important;
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 </style>

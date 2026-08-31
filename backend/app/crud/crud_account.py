@@ -63,9 +63,15 @@ def update_account(db: Session, db_obj: CloudAccount, obj_in: CloudAccountUpdate
     db.refresh(db_obj)
     return db_obj
 
+from app.models.domain_alert import DomainAlertEvent
+from app.models.api_call import ApiCallRecord
+
 def delete_account(db: Session, account_id: int) -> Optional[CloudAccount]:
     db_obj = db.query(CloudAccount).filter(CloudAccount.id == account_id).first()
     if db_obj:
+        # 清理该账号关联的域名到期告警事件历史与 API 记录
+        db.query(DomainAlertEvent).filter(DomainAlertEvent.account_id == account_id).delete()
+        db.query(ApiCallRecord).filter(ApiCallRecord.account_id == account_id).delete()
         # 由数据库级联外键 ON DELETE CASCADE 自动物理删除关联资源
         db.delete(db_obj)
         db.commit()

@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
-# 复制项目代码
-COPY . .
+# 复制项目运行所需核心代码 (精准复制，排除杂项)
+COPY app/ ./app/
 
 # 暴露端口
 EXPOSE 8000

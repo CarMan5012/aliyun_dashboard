@@ -175,11 +175,11 @@ export const useSyncStore = defineStore('sync', () => {
 
           // 3. 轮询任务状态
           try {
-            const res = await fetchTaskStatus(taskId)
+            const res = await fetchTaskStatus(taskId, task.accountId)
             task.errorCount = 0 // 重置错误计数
             const currentLog = syncHistory.value.find(h => h.id === taskId)
             if (currentLog && res.task_status !== task.lastBackendStatus) {
-              currentLog.logs.push(`[${nowTime}] [状态] Celery ${task.lastBackendStatus || 'PENDING'} → ${res.task_status}`)
+              currentLog.logs.push(`[${nowTime}] [状态] 任务状态更新：${task.lastBackendStatus || 'PENDING'} → ${res.task_status}`)
               task.lastBackendStatus = res.task_status
             }
 
@@ -336,7 +336,7 @@ export const useSyncStore = defineStore('sync', () => {
       logs: [
         `[${startTimeStr}] [创建] 任务 ID：${taskId}`,
         `[${startTimeStr}] [范围] ${accountId === undefined ? '全部云账号' : `账号 ${accountAlias}（ID ${accountId}）`}`,
-        `[${startTimeStr}] [调度] 已进入 Celery 队列，等待 Worker 执行`,
+        `[${startTimeStr}] [调度] 已启动后台轻量异步任务执行`,
       ]
     }
     syncHistory.value.unshift(taskLog)

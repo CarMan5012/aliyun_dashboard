@@ -1,13 +1,23 @@
+import time
+import logging
+import threading
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.db.session import get_db
-from app.schemas.account import CloudAccountCreate, CloudAccountUpdate, CloudAccountResponse
+from app.schemas.account import (
+    CloudAccountCreate, 
+    CloudAccountUpdate, 
+    CloudAccountResponse, 
+    AccountSaveResponse
+)
 from app.crud import crud_account
-from app.tasks.aliyun_sync import sync_single_account_task
+from app.tasks.sync_lock import AccountSyncLock, AccountCooldown
+from app.tasks.aliyun_sync import sync_account_resources
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # 定义包装响应模型以适配前端
@@ -29,16 +39,10 @@ def list_accounts(
     accounts = crud_account.get_accounts(db, skip=skip, limit=limit)
     return {"status": "success", "data": accounts}
 
-import logging
-from app.tasks.sync_lock import AccountSyncLock, AccountCooldown
-
-logger = logging.getLogger(__name__)
-
-from app.schemas.account import CloudAccountCreate, CloudAccountUpdate, CloudAccountResponse, AccountSaveResponse
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=AccountSaveResponse)
 def create_account(account_in: CloudAccountCreate, db: Session = Depends(get_db)):
-    """添加新的阿里云账号，并自动触发该账号的资源同步任务"""
+    """添加新的阿里云账号，并自动在后台线程触发该账号的初始全量同步任务"""
     existing = crud_account.get_account_by_alias(db, alias=account_in.account_alias)
     if existing:
         raise HTTPException(
@@ -47,33 +51,24 @@ def create_account(account_in: CloudAccountCreate, db: Session = Depends(get_db)
         )
     try:
         account = crud_account.create_account(db, obj_in=account_in)
-    except IntegrityError as ie:
+    except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"账号别名 [{account_in.account_alias}] 数据库唯一约束冲突，请使用其他别名"
         )
     
-    # 尝试触发同步任务，若 Celery/Redis 队列挂掉，不影响账号成功落库
-    sync_queued = False
-    task_id = None
-    warning_msg = None
-    try:
-        task = sync_single_account_task.delay(account.id)
-        if task and getattr(task, "id", None):
-            sync_queued = True
-            task_id = str(task.id)
-    except Exception as e:
-        sync_queued = False
-        warning_msg = f"账号创建成功，但自动数据同步任务投递失败 ({str(e)})，请稍后手动同步。"
-        logger.warning(warning_msg)
+    # 异步触发初始数据全量同步
+    task_id = f"local_sync_{account.id}_{int(time.time())}"
+    threading.Thread(target=sync_account_resources, args=[account.id], kwargs={"full_scan": True}, daemon=True).start()
 
     return {
         "status": "success",
         "data": account,
-        "sync_queued": sync_queued,
+        "sync_queued": True,
         "task_id": task_id,
-        "warning": warning_msg
+        "warning": None
     }
+
 
 @router.get("/{account_id}", response_model=AccountSingleResponse)
 def read_account(account_id: int, db: Session = Depends(get_db)):
@@ -85,6 +80,7 @@ def read_account(account_id: int, db: Session = Depends(get_db)):
             detail="云账号未找到"
         )
     return {"status": "success", "data": account}
+
 
 @router.put("/{account_id}", response_model=AccountSaveResponse)
 def update_account(account_id: int, account_in: CloudAccountUpdate, db: Session = Depends(get_db)):
@@ -112,7 +108,7 @@ def update_account(account_id: int, account_in: CloudAccountUpdate, db: Session 
 
     try:
         updated = crud_account.update_account(db, db_obj=account, obj_in=account_in)
-    except IntegrityError as ie:
+    except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=f"账号别名 [{account_in.account_alias}] 数据库唯一约束冲突，请使用其他别名"
@@ -121,30 +117,25 @@ def update_account(account_id: int, account_in: CloudAccountUpdate, db: Session 
     # 仅当 AccessKey 凭证发生变化时才重新触发数据同步
     sync_queued = False
     task_id = None
-    warning_msg = None
     if credential_changed:
         AccountCooldown.clear_cooldown(updated.id)
         updated.last_sync_status = "never"
         updated.last_sync_error = None
         updated.last_sync_details = None
         db.commit()
-        try:
-            task = sync_single_account_task.delay(updated.id)
-            if task and task.id:
-                sync_queued = True
-                task_id = task.id
-        except Exception as e:
-            sync_queued = False
-            warning_msg = f"账号凭证更新成功，但自动数据同步任务投递失败 ({str(e)})，请稍后手动同步。"
-            logger.warning(warning_msg)
+
+        task_id = f"local_sync_{updated.id}_{int(time.time())}"
+        threading.Thread(target=sync_account_resources, args=[updated.id], kwargs={"full_scan": True}, daemon=True).start()
+        sync_queued = True
 
     return {
         "status": "success",
         "data": updated,
         "sync_queued": sync_queued,
         "task_id": task_id,
-        "warning": warning_msg
+        "warning": None
     }
+
 
 @router.delete("/{account_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(account_id: int, db: Session = Depends(get_db)):
@@ -158,9 +149,10 @@ def delete_account(account_id: int, db: Session = Depends(get_db)):
     crud_account.delete_account(db, account_id=account_id)
     return None
 
+
 @router.post("/{account_id}/sync")
 def sync_account(account_id: int, full_scan: bool = Query(True), db: Session = Depends(get_db)):
-    """手动触发指定阿里云账号的全量深度资产同步"""
+    """手动触发指定阿里云账号的全量/增量资产同步（原生后台守护线程执行）"""
     account = crud_account.get_account(db, account_id=account_id)
     if not account:
         raise HTTPException(
@@ -180,29 +172,11 @@ def sync_account(account_id: int, full_scan: bool = Query(True), db: Session = D
             "message": f"账号 [{account.account_alias}] 正在同步中，请勿重复触发。"
         }
 
-    try:
-        task = sync_single_account_task.delay(account.id, full_scan=full_scan)
-        if not task or not task.id:
-            raise RuntimeError("未能从 Celery 任务队列中获取有效 Task ID")
+    task_id = f"local_sync_{account.id}_{int(time.time())}"
+    threading.Thread(target=sync_account_resources, args=[account.id], kwargs={"full_scan": full_scan}, daemon=True).start()
 
-        return {
-            "status": "success",
-            "task_id": task.id,
-            "message": f"账号 [{account.account_alias}] 的同步任务已提交后台"
-        }
-    except Exception as e:
-        logger.warning(f"Celery/Redis 队列不可用 ({e})，平滑降级为进程内同步执行...")
-        try:
-            from app.tasks.aliyun_sync import sync_account_resources
-            res = sync_account_resources(account.id, full_scan=full_scan)
-            return {
-                "status": "success",
-                "task_id": f"direct_sync_{account.id}",
-                "message": f"账号 [{account.account_alias}] 资源已平滑同步完成（单机降级模式）",
-                "result": res
-            }
-        except Exception as sync_err:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"同步降级执行异常: {str(sync_err)}"
-            )
+    return {
+        "status": "success",
+        "task_id": task_id,
+        "message": f"账号 [{account.account_alias}] 的同步任务已在后台执行"
+    }

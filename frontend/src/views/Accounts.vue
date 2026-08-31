@@ -16,11 +16,11 @@
         </div>
 
         <!-- 卡片网格 -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 accounts-stagger">
           <div
             v-for="acc in accountStore.accounts"
             :key="acc.id"
-            class="bg-white dark:bg-cardDark border border-borderLight dark:border-borderDark rounded-xl p-6 shadow-sm hover:shadow-card-hover hover:border-primary/20 dark:hover:border-primary/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+            class="account-card bg-white dark:bg-cardDark border border-borderLight dark:border-borderDark rounded-xl p-6 shadow-sm hover:shadow-card-hover hover:border-primary/30 dark:hover:border-primary/30 flex flex-col justify-between select-none"
           >
             <div>
               <div class="flex items-center justify-between">
@@ -372,3 +372,25 @@ function handleSubmit() {
   })
 }
 </script>
+
+<style scoped>
+.accounts-stagger > * {
+  animation: fadeUp 240ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+}
+.accounts-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.accounts-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.accounts-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.accounts-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.accounts-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.accounts-stagger > *:nth-child(6) { animation-delay: 200ms; }
+
+.account-card {
+  transition: transform 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms ease, border-color 180ms ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .account-card:hover {
+    transform: translateY(-2px);
+  }
+}
+</style>

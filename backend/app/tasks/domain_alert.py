@@ -5,6 +5,7 @@ import hmac
 import json
 import logging
 import time
+import threading
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
 
@@ -12,7 +13,6 @@ from app.db.session import SessionLocal
 from app.models.account import CloudAccount
 from app.models.domain_alert import DomainAlertEvent, DomainAlertSetting
 from app.models.resource import Resource
-from app.tasks.celery_app import celery_app
 from app.tasks.sync_lock import AccountSyncLock
 from app.core.config import settings
 
@@ -88,8 +88,9 @@ def send_dingtalk_markdown(webhook: str, secret: str | None, title: str, markdow
             f"{timestamp}\n{secret}".encode(),
             digestmod=hashlib.sha256,
         ).digest()
+        sign_str = base64.b64encode(signature).decode("utf-8")
         separator = "&" if "?" in webhook else "?"
-        url = f"{webhook}{separator}timestamp={timestamp}&sign={quote_plus(base64.b64encode(signature))}"
+        url = f"{webhook}{separator}timestamp={timestamp}&sign={quote_plus(sign_str)}"
 
     payload = json.dumps({
         "msgtype": "markdown",
@@ -122,7 +123,6 @@ LEVEL_EMOJI = {
 }
 
 def build_markdown(items: list[dict], keyword: str) -> tuple[str, str]:
-    highest = max(items, key=lambda item: LEVEL_RANK[item["level"]])["level"]
     title = f"{keyword}｜域名到期预警 ({len(items)})"
     today_str = datetime.date.today().strftime("%Y-%m-%d")
 
@@ -259,8 +259,8 @@ def process_domain_alerts(db, today: datetime.date | None = None) -> dict:
     return {"status": "sent", "sent_count": len(items)}
 
 
-@celery_app.task(name="app.tasks.domain_alert.check_domain_alert_task")
 def check_domain_alert_task():
+    """域名到期钉钉告警任务（原生线程级任务）"""
     lock = AccountSyncLock("domain-alert", timeout=300)
     if not lock.acquire():
         return {"status": "already_running", "sent_count": 0}
@@ -274,3 +274,8 @@ def check_domain_alert_task():
     finally:
         db.close()
         lock.release()
+
+
+def trigger_domain_alert_check():
+    """在后台异步守护线程中触发域名告警检查"""
+    threading.Thread(target=check_domain_alert_task, daemon=True).start()

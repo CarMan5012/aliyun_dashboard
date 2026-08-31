@@ -5,16 +5,15 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "阿里云资源看板"
     API_V1_STR: str = "/api/v1"
     
-    # 数据库配置 (MySQL)
+    # 数据库类型与配置 (支持 sqlite 与 mysql，默认若未配置 MYSQL_HOST 则为 sqlite)
+    DB_TYPE: str = os.getenv("DB_TYPE", "auto")  # auto | sqlite | mysql
+    SQLITE_DB_PATH: str = os.getenv("SQLITE_DB_PATH", "/app/data/aliyun.db")
+
     MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
     MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "password")
-    MYSQL_HOST: str = os.getenv("MYSQL_HOST", "db")  # 对应 docker-compose 中的服务名
+    MYSQL_HOST: str = os.getenv("MYSQL_HOST", "")  # 为空时自动使用轻量 SQLite
     MYSQL_PORT: str = os.getenv("MYSQL_PORT", "3306")
     MYSQL_DB: str = os.getenv("MYSQL_DB", "assetvista")
-
-    # Redis 配置
-    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
-    REDIS_PORT: str = os.getenv("REDIS_PORT", "6379")
 
     # 安全配置：加解密主密钥，必须在环境部署时注入
     MASTER_KEY: str = os.getenv("ASSETVISTA_MASTER_KEY", "")
@@ -33,7 +32,20 @@ class Settings(BaseSettings):
     )
 
     @property
+    def is_sqlite(self) -> bool:
+        if self.DB_TYPE.lower() == "sqlite":
+            return True
+        if self.DB_TYPE.lower() == "mysql":
+            return False
+        return not bool(self.MYSQL_HOST.strip())
+
+    @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
+        if self.is_sqlite:
+            # 确保本地 sqlite 目录存在
+            os.makedirs(os.path.dirname(os.path.abspath(self.SQLITE_DB_PATH)), exist_ok=True)
+            return f"sqlite:///{self.SQLITE_DB_PATH}"
+
         from sqlalchemy.engine import URL
         return URL.create(
             drivername="mysql+pymysql",
@@ -44,13 +56,5 @@ class Settings(BaseSettings):
             database=self.MYSQL_DB,
             query={"charset": "utf8mb4"}
         ).render_as_string(hide_password=False)
-
-    @property
-    def CELERY_BROKER_URL(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
-
-    @property
-    def CELERY_RESULT_BACKEND(self) -> str:
-        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/0"
 
 settings = Settings()

@@ -155,7 +155,7 @@
               云账号数据同步周期
             </h3>
             <div class="space-y-4 text-xs">
-              <p class="text-slate-500 dark:text-slate-450">更改各个托管云账号的自动拉取时间周期（通过后台 Celery Beat 分发）。</p>
+              <p class="text-slate-500 dark:text-slate-450">更改各个托管云账号的自动拉取时间周期（通过系统内置定时调度器分发）。</p>
               <div class="space-y-3 max-h-[160px] overflow-y-auto pr-1 custom-scroll">
                 <div v-for="acc in accountStore.accounts" :key="acc.id" class="flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 border border-borderLight dark:border-borderDark p-3 rounded-xl">
                   <span class="font-semibold text-slate-700 dark:text-slate-300">{{ acc.account_alias }}</span>
@@ -292,8 +292,15 @@ async function revealCredentials() {
     webhook.value = credentials.webhook || ''
     dingSecret.value = credentials.secret || ''
     credentialsLoaded.value = true
-  } catch (error) {
-    message.error(apiError(error))
+  } catch (error: any) {
+    // 即使凭据获取遇到错误，也允许界面渲染，以便用户可以重新配置
+    credentialsLoaded.value = true
+    const status = error?.response?.status
+    if (status === 403) {
+      message.warning('当前服务端已配置设置管理口令，请输入口令后再进行操作')
+    } else {
+      console.warn('获取既有告警凭据失败:', error)
+    }
   }
 }
 
@@ -327,6 +334,10 @@ function handleThemeChange(val: 'light' | 'dark') {
 </script>
 
 <style scoped>
+.setting-section {
+  transition: transform 160ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 160ms ease;
+}
+
 .custom-scroll::-webkit-scrollbar {
   width: 4px;
 }
