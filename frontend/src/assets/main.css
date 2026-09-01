@@ -102,31 +102,38 @@ button:not(:disabled):active,
 .dash-stagger > *:nth-child(5) { animation: emilFadeUp 200ms var(--ease-out) 160ms both; }
 
 /* ── Naive UI 全局暗黑模式适配（消除任何数据行/表头白块背景） ── */
-.dark .n-data-table {
+.dark .n-data-table,
+html.dark .n-data-table,
+.dark .n-data-table-wrapper,
+html.dark .n-data-table-wrapper,
+.dark .n-data-table-base-table-body,
+html.dark .n-data-table-base-table-body,
+.dark .n-data-table-table,
+html.dark .n-data-table-table {
   background-color: transparent !important;
 }
 
-.dark .n-data-table .n-data-table-wrapper {
-  background-color: transparent !important;
-}
-
-.dark .n-data-table .n-data-table-th {
+.dark .n-data-table .n-data-table-th,
+html.dark .n-data-table .n-data-table-th {
   color: #94a3b8 !important;
   background-color: #111827 !important;
-  border-bottom-color: rgba(51, 65, 85, 0.5) !important;
+  border-bottom-color: rgba(51, 65, 85, 0.7) !important;
 }
 
-.dark .n-data-table .n-data-table-td {
-  color: #cbd5e1 !important;
+.dark .n-data-table .n-data-table-td,
+html.dark .n-data-table .n-data-table-td {
+  color: #f1f5f9 !important;
   background-color: #111827 !important;
-  border-bottom-color: rgba(51, 65, 85, 0.35) !important;
+  border-bottom-color: rgba(51, 65, 85, 0.4) !important;
 }
 
-.dark .n-data-table .n-data-table-tr:hover .n-data-table-td {
-  background-color: #1f2937 !important;
+.dark .n-data-table .n-data-table-tr:hover .n-data-table-td,
+html.dark .n-data-table .n-data-table-tr:hover .n-data-table-td {
+  background-color: #1e293b !important;
 }
 
-.dark .n-card {
+.dark .n-card,
+html.dark .n-card {
   background-color: #111827 !important;
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08) !important;

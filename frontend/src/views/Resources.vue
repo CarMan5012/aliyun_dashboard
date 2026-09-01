@@ -834,8 +834,8 @@ function formatDate(dateStr?: string | null): string {
   transform: scale(0.88);
 }
 
-/* ── 表格通用样式（浅色默认） ── */
-.resource-table :deep(.n-data-table-th) {
+/* ── 表格样式：浅色模式 ── */
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-th) {
   height: 38px;
   padding: 6px 10px !important;
   background: #ffffff !important;
@@ -848,22 +848,22 @@ function formatDate(dateStr?: string | null): string {
   transition: color 180ms var(--ease-out);
 }
 
-.resource-table :deep(.n-data-table-th--sortable:hover) {
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sortable:hover) {
   background: #ffffff !important;
   color: #2563eb !important;
 }
 
-.resource-table :deep(.n-data-table-th--sort-active) {
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sort-active) {
   background: #ffffff !important;
   color: #2563eb !important;
   font-weight: 700;
 }
 
-.resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
   color: #2563eb !important;
 }
 
-.resource-table :deep(.n-data-table-td) {
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-td) {
   height: 40px;
   padding: 6px 10px !important;
   background: #ffffff !important;
@@ -875,11 +875,8 @@ function formatDate(dateStr?: string | null): string {
   transition: background-color 160ms var(--ease-out);
 }
 
-/* 触控防误触媒体查询 */
-@media (hover: hover) and (pointer: fine) {
-  .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
-    background: #f8fafc !important;
-  }
+:global(html:not(.dark)) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+  background: #f8fafc !important;
 }
 
 .resource-table :deep(.n-data-table-sorter) {
@@ -892,7 +889,6 @@ function formatDate(dateStr?: string | null): string {
   transition: background-color 160ms var(--ease-out);
 }
 
-/* 避免使用 transition: all，严格限定属性 */
 .resource-table :deep(.n-tag) {
   height: 22px;
   padding: 0 8px;
@@ -913,58 +909,65 @@ function formatDate(dateStr?: string | null): string {
   font-size: 13px;
 }
 
-/* ── 深色主题下的表格样式 ── */
-:global(.dark) .asset-count {
-  background: rgba(37, 99, 235, 0.16);
+/* ── 表格样式：深色模式 (彻底统一为深邃黑灰与高对比亮字) ── */
+:global(html.dark) .asset-count {
+  background: rgba(37, 99, 235, 0.24);
   color: #93c5fd;
 }
 
-:global(.dark) .resource-panel {
-  box-shadow: 0 10px 32px rgba(2, 6, 23, 0.24);
+:global(html.dark) .resource-panel {
+  background-color: #111827 !important;
+  box-shadow: 0 10px 32px rgba(2, 6, 23, 0.36);
+  border-color: rgba(51, 65, 85, 0.7) !important;
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-th) {
+:global(html.dark) .resource-table :deep(.n-data-table),
+:global(html.dark) .resource-table :deep(.n-data-table-wrapper),
+:global(html.dark) .resource-table :deep(.n-data-table-base-table-body),
+:global(html.dark) .resource-table :deep(.n-data-table-table) {
+  background-color: #111827 !important;
+}
+
+:global(html.dark) .resource-table :deep(.n-data-table-th) {
   height: 38px;
   padding: 6px 10px !important;
-  background: #111827 !important;
+  background-color: #111827 !important;
   color: #94a3b8 !important;
   font-size: 13px !important;
   font-weight: 600;
   white-space: nowrap !important;
   letter-spacing: 0.01em;
-  border-bottom: 1.5px solid rgba(51, 65, 85, 0.6) !important;
+  border-bottom: 1.5px solid rgba(51, 65, 85, 0.8) !important;
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-th--sortable:hover) {
-  background: #111827 !important;
+:global(html.dark) .resource-table :deep(.n-data-table-th--sortable:hover) {
+  background-color: #1a2234 !important;
   color: #60a5fa !important;
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-th--sort-active) {
-  background: #111827 !important;
+:global(html.dark) .resource-table :deep(.n-data-table-th--sort-active) {
+  background-color: #111827 !important;
   color: #60a5fa !important;
   font-weight: 700;
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
+:global(html.dark) .resource-table :deep(.n-data-table-th--sort-active .n-data-table-sorter) {
   color: #60a5fa !important;
 }
 
-:global(.dark) .resource-table :deep(.n-data-table-td) {
+:global(html.dark) .resource-table :deep(.n-data-table-td) {
   height: 40px;
   padding: 6px 10px !important;
-  background: #111827 !important;
-  color: #e2e8f0 !important;
+  background-color: #111827 !important;
+  color: #f1f5f9 !important;
   font-size: 13px !important;
   line-height: 1.4;
   white-space: nowrap !important;
-  border-bottom: 1px solid rgba(51, 65, 85, 0.35) !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4) !important;
   transition: background-color 160ms var(--ease-out);
 }
 
-@media (hover: hover) and (pointer: fine) {
-  :global(.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
-    background: #1f2937 !important;
-  }
+:global(html.dark) .resource-table :deep(.n-data-table-tr:hover .n-data-table-td) {
+  background-color: #1e293b !important;
 }
 </style>
