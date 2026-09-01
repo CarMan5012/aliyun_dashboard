@@ -4,7 +4,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: aliyun-dashboard-backend
-    restart: always
+    restart: "no"
     expose:
       - "8000"
     volumes:
@@ -21,7 +21,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: aliyun-dashboard-frontend
-    restart: always
+    restart: "no"
     environment:
       - "SETTINGS_ADMIN_PASSWORD=${SETTINGS_ADMIN_PASSWORD:?Error: SETTINGS_ADMIN_PASSWORD MUST BE PROVIDED IN ENVIRONMENT}"
     ports:

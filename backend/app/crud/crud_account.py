@@ -37,7 +37,7 @@ def create_account(db: Session, obj_in: CloudAccountCreate) -> CloudAccount:
     db_obj = CloudAccount(
         account_alias=clean_alias,
         access_key_id=clean_ak,
-        sync_interval=obj_in.sync_interval if obj_in.sync_interval is not None else 24
+        sync_interval=obj_in.sync_interval if obj_in.sync_interval is not None else 168
     )
     db_obj.set_secret(clean_sk)
     db.add(db_obj)

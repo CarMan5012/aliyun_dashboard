@@ -72,6 +72,10 @@
                   </div>
                 </div>
                 <div class="flex justify-between items-center">
+                  <span class="text-slate-400 dark:text-slate-500">自动同步策略</span>
+                  <span class="font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/40 px-2 py-0.5 rounded text-[11px]">{{ formatSyncInterval(acc.sync_interval) }}</span>
+                </div>
+                <div class="flex justify-between items-center">
                   <span class="text-slate-400 dark:text-slate-500">上次尝试同步</span>
                   <span class="font-mono text-slate-700 dark:text-slate-300">{{ formatDate(acc.last_attempted_at) }}</span>
                 </div>
@@ -152,7 +156,7 @@ const formData = reactive({
   alias: '',
   ak: '',
   sk: '',
-  interval: 24,
+  interval: 168,
 })
 
 const formRules = computed(() => {
@@ -164,11 +168,10 @@ const formRules = computed(() => {
 })
 
 const intervalOptions = [
-  { label: '手动同步 (不自动)', value: 0 },
-  { label: '每小时同步', value: 1 },
-  { label: '每 6 小时同步', value: 6 },
-  { label: '每 12 小时同步', value: 12 },
-  { label: '每天自动同步', value: 24 },
+  { label: '每周一凌晨同步', value: 168 },
+  { label: '每月 1 号凌晨同步', value: 720 },
+  { label: '每天凌晨自动同步', value: 24 },
+  { label: '纯手动同步', value: 0 },
 ]
 
 import { fetchResources } from '@/api'
@@ -242,6 +245,15 @@ function formatDate(dateStr?: string): string {
   } catch (e) {
     return dateStr
   }
+}
+
+function formatSyncInterval(interval?: number): string {
+  if (interval === 168) return '每周一凌晨'
+  if (interval === 720) return '每月 1 号凌晨'
+  if (interval === 24) return '每天凌晨'
+  if (interval === 0) return '纯手动同步'
+  if (interval === undefined || interval === null) return '每周一凌晨'
+  return `${interval} 小时/次`
 }
 
 function getEcsCount(accountAlias: string): number {

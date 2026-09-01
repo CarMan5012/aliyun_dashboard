@@ -25,7 +25,6 @@ from app.main import app
 from app.models.account import CloudAccount
 from app.models.domain_alert import DomainAlertEvent, DomainAlertSetting
 from app.models.resource import Resource
-from app.tasks.celery_app import celery_app
 from app.tasks.domain_alert import build_markdown, is_workday, process_domain_alerts
 
 

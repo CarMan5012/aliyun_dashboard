@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- 背景流光渐变 -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FF6A00" />
+      <stop offset="60%" stop-color="#FF8A00" />
+      <stop offset="100%" stop-color="#FF4800" />
+    </linearGradient>
+
+    <!-- 内部光晕渐变 -->
+    <linearGradient id="cloudGrad" x1="20%" y1="10%" x2="80%" y2="90%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#F3F4F6" />
+    </linearGradient>
+
+    <!-- 投影滤镜 -->
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#FF6A00" flood-opacity="0.35" />
+    </filter>
+
+    <filter id="innerGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.12" />
+    </filter>
+  </defs>
+
+  <!-- 外部高质感圆角矩形底座 -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#bgGrad)" filter="url(#dropShadow)" />
+
+  <!-- 内部现代轻奢云朵与资产连通网格 -->
+  <g filter="url(#innerGlow)">
+    <!-- 云朵主形态 -->
+    <path
+      d="M362 336H168C130.445 336 100 305.555 100 268C100 233.155 126.155 204.42 160.185 200.56C171.43 149.69 216.48 112 270 112C328.785 112 377.295 156.455 383.05 213.9C409.845 221.755 428 246.755 428 276C428 309.135 401.135 336 368 336H362Z"
+      fill="url(#cloudGrad)"
+    />
+
+    <!-- 中心聚合监控科技脉冲微标 -->
+    <circle cx="260" cy="240" r="28" fill="#FF6A00" />
+    <circle cx="260" cy="240" r="14" fill="#FFFFFF" />
+    
+    <!-- 左右脉冲节点连接线 -->
+    <path d="M192 248C192 248 214 240 232 240" stroke="#FF6A00" stroke-width="8" stroke-linecap="round" />
+    <path d="M288 240C306 240 328 248 328 248" stroke="#FF6A00" stroke-width="8" stroke-linecap="round" />
+    <circle cx="186" cy="248" r="8" fill="#FF7A00" />
+    <circle cx="334" cy="248" r="8" fill="#FF7A00" />
+  </g>
+</svg>

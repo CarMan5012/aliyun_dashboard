@@ -10,12 +10,15 @@ keys/
 *.cert
 *.crt
 
-# Local Databases & Output Data
+# Local Databases & Output Data & Tar Archives
 *.sqlite3
 *.db
 backend/app.db
 data/
 output/
+*.tar
+*.tar.gz
+*.zip
 
 # Node.js
 node_modules/

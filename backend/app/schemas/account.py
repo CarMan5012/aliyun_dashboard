@@ -18,7 +18,7 @@ def clean_val(val: Optional[str]) -> Optional[str]:
 class CloudAccountBase(BaseModel):
     account_alias: str = Field(..., description="账号别名，用于标识账号，如 '生产账号'")
     access_key_id: str = Field(..., description="阿里云 AccessKey ID")
-    sync_interval: Optional[int] = Field(24, description="同步间隔(小时)，0表示手动同步")
+    sync_interval: Optional[int] = Field(168, description="同步间隔(小时)，168表示每周一，0表示手动同步")
 
     @field_validator("account_alias", "access_key_id", mode="before")
     def validate_and_clean_base_fields(cls, v: str) -> str:

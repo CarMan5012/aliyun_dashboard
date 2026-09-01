@@ -247,11 +247,10 @@ onMounted(async () => {
 })
 
 const intervalOptions = [
-  { label: '手动同步 (不自动)', value: 0 },
-  { label: '每 1 小时同步', value: 1 },
-  { label: '每 6 小时同步', value: 6 },
-  { label: '每 12 小时同步', value: 12 },
-  { label: '每天自动同步', value: 24 },
+  { label: '每周一凌晨同步', value: 168 },
+  { label: '每月 1 号凌晨同步', value: 720 },
+  { label: '每天凌晨自动同步', value: 24 },
+  { label: '纯手动同步', value: 0 },
 ]
 
 function apiError(error: any): string {

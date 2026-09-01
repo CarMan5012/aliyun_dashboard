@@ -15,7 +15,7 @@ class CloudAccount(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
-    sync_interval = Column(Integer, default=24, nullable=False, comment="同步间隔(小时)，0表示手动同步")
+    sync_interval = Column(Integer, default=168, nullable=False, comment="同步间隔(小时)，168表示每周一，0表示手动同步")
     last_synced_at = Column(DateTime(timezone=True), nullable=True, comment="上次成功同步时间")
     last_attempted_at = Column(DateTime(timezone=True), nullable=True, comment="上次尝试同步时间")
     last_sync_status = Column(String(20), default="never", nullable=False, comment="最近同步结果")
