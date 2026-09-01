@@ -368,17 +368,17 @@ async function saveDomainAlert() {
       reminder_days: settingStore.reminderDays,
       warning_days: settingStore.warningDays,
       critical_days: settingStore.criticalDays,
-      ding_keyword: settingStore.dingKeyword.trim() || undefined,
+      keyword: settingStore.dingKeyword.trim() || '域名告警',
     }
 
     if (webhook.value.trim()) {
-      payload.ding_webhook = webhook.value.trim()
+      payload.webhook = webhook.value.trim()
     }
     if (dingSecret.value.trim()) {
-      payload.ding_secret = dingSecret.value.trim()
+      payload.secret = dingSecret.value.trim()
     }
 
-    await settingStore.saveSettings(payload)
+    await settingStore.updateDomainAlert(payload)
     message.success('钉钉域名告警配置已成功保存！')
     webhook.value = ''
     dingSecret.value = ''
@@ -398,18 +398,7 @@ async function testDomainAlert() {
 
   testing.value = true
   try {
-    const payload: any = {}
-    if (webhook.value.trim()) {
-      payload.ding_webhook = webhook.value.trim()
-    }
-    if (dingSecret.value.trim()) {
-      payload.ding_secret = dingSecret.value.trim()
-    }
-    if (settingStore.dingKeyword.trim()) {
-      payload.ding_keyword = settingStore.dingKeyword.trim()
-    }
-
-    await settingStore.sendTestAlert(payload)
+    await settingStore.testDomainAlert()
     message.success('测试消息已成功发送至钉钉群，请在群聊中查收！')
   } catch (error: any) {
     message.error(apiError(error))
@@ -436,11 +425,11 @@ async function revealCredentials() {
   credentialsLoaded.value = false
   try {
     const creds = await fetchDomainAlertCredentials()
-    if (creds.ding_webhook) {
-      webhook.value = creds.ding_webhook
+    if (creds.webhook) {
+      webhook.value = creds.webhook
     }
-    if (creds.ding_secret) {
-      dingSecret.value = creds.ding_secret
+    if (creds.secret) {
+      dingSecret.value = creds.secret
     }
   } catch (e) {
     // 静默降级
