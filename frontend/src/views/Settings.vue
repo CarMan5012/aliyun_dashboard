@@ -1,318 +1,300 @@
 <template>
-  <div class="space-y-4 w-full">
-    <!-- 头部标题 Banner (全宽) -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 px-5 py-3.5 rounded-xl shadow-sm">
-      <div>
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <Icon icon="lucide:settings" :width="18" />
-          </div>
-          <h1 class="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100">系统配置中心</h1>
+  <div class="space-y-3.5 w-full">
+    <!-- 头部简洁 Banner -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 px-4 py-3 rounded-lg shadow-sm">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+          <Icon icon="lucide:settings" :width="15" />
         </div>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          配置域名到期钉钉预警、多账号自动同步周期与系统显示偏好
-        </p>
+        <div>
+          <h1 class="text-base font-bold tracking-tight text-slate-900 dark:text-slate-100">系统配置中心</h1>
+        </div>
+        <span class="text-xs text-slate-400 dark:text-slate-500 border-l border-slate-200 dark:border-slate-700 pl-2.5 ml-1">
+          域名预警 · 同步策略 · 系统偏好
+        </span>
       </div>
     </div>
 
-    <!-- 域名到期钉钉智能告警 (全宽卡片 + 上下分行布局) -->
+    <!-- 域名到期钉钉智能预警 (精致紧凑双栏布局) -->
     <div class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl shadow-sm overflow-hidden">
-      <!-- 模块标题栏 -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-            <Icon icon="lucide:bell-ring" :width="18" />
+      <!-- 头部：标题与总开关 -->
+      <div class="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20">
+        <div class="flex items-center gap-2.5">
+          <div class="w-6 h-6 rounded-md bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+            <Icon icon="lucide:bell-ring" :width="14" />
           </div>
-          <div>
-            <div class="flex items-center gap-2.5">
-              <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">域名到期钉钉智能预警</h3>
-              <span
-                class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                :class="settingStore.domainAlertEnabled ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
-              >
-                <span class="w-1.5 h-1.5 rounded-full" :class="settingStore.domainAlertEnabled ? 'bg-emerald-500' : 'bg-slate-400'" />
-                {{ settingStore.domainAlertEnabled ? '告警运行中' : '已停用' }}
-              </span>
-            </div>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              每天上午 09:00 自动巡检本地数据库，智能避开节假日与周末，并在工作日准时推送群提醒。
-            </p>
-          </div>
+          <span class="text-xs font-bold text-slate-800 dark:text-slate-200">域名到期钉钉智能预警</span>
+          <span
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium"
+            :class="settingStore.domainAlertEnabled ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
+          >
+            <span class="w-1.5 h-1.5 rounded-full" :class="settingStore.domainAlertEnabled ? 'bg-emerald-500' : 'bg-slate-400'" />
+            {{ settingStore.domainAlertEnabled ? '告警运行中' : '已停用' }}
+          </span>
+          <span class="text-[11px] text-slate-400 hidden sm:inline">（每天 09:00 自动巡检，智能避开节假日与周末）</span>
         </div>
 
-        <div class="flex items-center gap-3">
-          <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">告警总开关</span>
-          <n-switch v-model:value="settingStore.domainAlertEnabled" size="medium" />
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-medium text-slate-500">总开关</span>
+          <n-switch v-model:value="settingStore.domainAlertEnabled" size="small" />
         </div>
       </div>
 
-      <!-- 表单主体 (上下分行排版) -->
-      <div v-if="settingStore.loaded && credentialsLoaded" class="p-6 space-y-6">
-        <!-- 上部分：钉钉机器人通知通道 -->
-        <div class="space-y-4">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Icon icon="lucide:send" :width="15" class="text-blue-500" />
-              第一步：配置钉钉机器人通道
-            </h4>
-            <span
-              class="text-xs px-2.5 py-0.5 rounded font-medium"
-              :class="settingStore.webhookConfigured ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'"
-            >
-              {{ settingStore.webhookConfigured ? '● Webhook 已保存就绪' : '○ 暂未配置 Webhook' }}
-            </span>
-          </div>
+      <!-- 表单主体：左右紧凑双栏 -->
+      <div v-if="settingStore.loaded && credentialsLoaded" class="p-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <!-- 左侧 7 列：钉钉通道设置 -->
+          <div class="lg:col-span-7 space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Icon icon="lucide:send" :width="13" class="text-blue-500" />
+                钉钉通道接入凭据
+              </span>
+              <span
+                class="text-[11px] font-medium"
+                :class="settingStore.webhookConfigured ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400'"
+              >
+                {{ settingStore.webhookConfigured ? '● Webhook 已配置' : '○ 暂未配置' }}
+              </span>
+            </div>
 
-          <!-- Webhook 地址 (整行全宽) -->
-          <div class="space-y-1.5">
-            <label class="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-              <span>钉钉机器人 Webhook 地址</span>
-              <span class="text-red-500">*</span>
-            </label>
-            <n-input
-              v-model:value="webhook"
-              type="password"
-              size="medium"
-              show-password-on="click"
-              class="rounded-lg font-mono text-xs"
-              :placeholder="settingStore.webhookConfigured ? 'Webhook 地址已安全加密保存；如需修改请输入新地址' : 'https://oapi.dingtalk.com/robot/send?access_token=...'"
-            >
-              <template #prefix>
-                <Icon icon="lucide:link-2" class="text-slate-400 mr-1.5" />
-              </template>
-            </n-input>
-          </div>
-
-          <!-- 关键词 与 加签 Secret (双列并排) -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div class="space-y-1.5">
-              <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                安全自定义关键词 (可选)
+            <!-- Webhook 地址 -->
+            <div class="space-y-1">
+              <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-300 flex items-center gap-1">
+                <span>Webhook 地址</span>
+                <span class="text-red-500">*</span>
               </label>
               <n-input
-                v-model:value="settingStore.dingKeyword"
-                maxlength="100"
-                size="medium"
-                class="rounded-lg text-xs"
-                placeholder="钉钉自定义关键词（默认：域名告警）"
+                v-model:value="webhook"
+                type="password"
+                size="small"
+                show-password-on="click"
+                class="font-mono text-xs"
+                :placeholder="settingStore.webhookConfigured ? 'Webhook 地址已加密保存；输入新地址可替换' : '请输入钉钉机器人 Webhook 地址'"
               >
                 <template #prefix>
-                  <Icon icon="lucide:tag" class="text-slate-400 mr-1.5" />
+                  <Icon icon="lucide:link-2" class="text-slate-400 mr-1" />
                 </template>
               </n-input>
+            </div>
+
+            <!-- 关键词 与 加签 Secret (双列紧凑并排) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-0.5">
+              <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                  安全自定义关键词 (可选)
+                </label>
+                <n-input
+                  v-model:value="settingStore.dingKeyword"
+                  maxlength="100"
+                  size="small"
+                  class="text-xs"
+                  placeholder="默认：域名告警"
+                >
+                  <template #prefix>
+                    <Icon icon="lucide:tag" class="text-slate-400 mr-1" />
+                  </template>
+                </n-input>
+              </div>
+
+              <div class="space-y-1">
+                <div class="flex items-center justify-between">
+                  <label class="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                    加签 Secret (可选)
+                  </label>
+                  <span class="text-[10px]" :class="settingStore.secretConfigured ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-slate-400'">
+                    {{ settingStore.secretConfigured ? '● 已加签' : '○ 未加签' }}
+                  </span>
+                </div>
+                <n-input
+                  v-model:value="dingSecret"
+                  type="password"
+                  size="small"
+                  show-password-on="click"
+                  class="font-mono text-xs"
+                  :placeholder="settingStore.secretConfigured ? 'Secret 已保存；输入新值替换' : 'SEC 开头的加签密钥'"
+                >
+                  <template #prefix>
+                    <Icon icon="lucide:shield-check" class="text-slate-400 mr-1" />
+                  </template>
+                </n-input>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧 5 列：到期阶梯预警阈值 -->
+          <div class="lg:col-span-5 bg-slate-50/70 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 p-3 rounded-lg space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800 pb-1.5">
+              <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <Icon icon="lucide:layers" :width="13" class="text-amber-500" />
+                到期阶梯预警阈值
+              </span>
+              <span class="text-[10px] text-slate-400">提醒 &gt; 告警 &gt; 严重</span>
             </div>
 
             <div class="space-y-1.5">
-              <div class="flex items-center justify-between">
-                <label class="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  加签 Secret 密钥 (可选)
-                </label>
-                <span class="text-xs" :class="settingStore.secretConfigured ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-slate-400'">
-                  {{ settingStore.secretConfigured ? '● 已配置' : '○ 未配置' }}
-                </span>
-              </div>
-              <n-input
-                v-model:value="dingSecret"
-                type="password"
-                size="medium"
-                show-password-on="click"
-                class="rounded-lg font-mono text-xs"
-                :placeholder="settingStore.secretConfigured ? '加签 Secret 已保存；输入新值可替换' : 'SEC 开头的加签密钥（若机器人安全设置开启了加签）'"
-              >
-                <template #prefix>
-                  <Icon icon="lucide:shield-check" class="text-slate-400 mr-1.5" />
-                </template>
-              </n-input>
-            </div>
-          </div>
-        </div>
-
-        <!-- 下部分：到期阶梯预警规则 (横向 3 栏并排) -->
-        <div class="space-y-3 pt-2">
-          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
-            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Icon icon="lucide:layers" :width="15" class="text-amber-500" />
-              第二步：设置到期阶梯预警阈值
-            </h4>
-            <span class="text-xs text-slate-400">
-              规则：常规提醒 &gt; 重点告警 &gt; 紧急严重，各阶段仅触发一次
-            </span>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- 常规提醒 -->
-            <div class="bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-blue-500 shadow-sm shrink-0" />
-                <div>
-                  <div class="text-xs font-bold text-slate-800 dark:text-slate-200">常规提醒阈值</div>
-                  <p class="text-[11px] text-slate-400 mt-0.5">剩余天数小于等于</p>
+              <!-- 常规提醒 -->
+              <div class="flex items-center justify-between bg-white dark:bg-cardDark border border-slate-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-md">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-blue-500" />
+                  <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">常规提醒天数</span>
                 </div>
+                <n-input-number
+                  v-model:value="settingStore.reminderDays"
+                  :min="1"
+                  :max="365"
+                  size="small"
+                  class="w-20 text-right"
+                >
+                  <template #suffix>天</template>
+                </n-input-number>
               </div>
-              <n-input-number
-                v-model:value="settingStore.reminderDays"
-                :min="1"
-                :max="365"
-                size="medium"
-                class="w-28 text-right"
-              >
-                <template #suffix>天</template>
-              </n-input-number>
-            </div>
 
-            <!-- 重点告警 -->
-            <div class="bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-amber-500 shadow-sm shrink-0" />
-                <div>
-                  <div class="text-xs font-bold text-slate-800 dark:text-slate-200">重点告警阈值</div>
-                  <p class="text-[11px] text-slate-400 mt-0.5">进入重点关注期</p>
+              <!-- 重点告警 -->
+              <div class="flex items-center justify-between bg-white dark:bg-cardDark border border-slate-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-md">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-amber-500" />
+                  <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">重点告警天数</span>
                 </div>
+                <n-input-number
+                  v-model:value="settingStore.warningDays"
+                  :min="1"
+                  :max="365"
+                  size="small"
+                  class="w-20 text-right"
+                >
+                  <template #suffix>天</template>
+                </n-input-number>
               </div>
-              <n-input-number
-                v-model:value="settingStore.warningDays"
-                :min="1"
-                :max="365"
-                size="medium"
-                class="w-28 text-right"
-              >
-                <template #suffix>天</template>
-              </n-input-number>
-            </div>
 
-            <!-- 紧急严重 -->
-            <div class="bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/80 dark:border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
-              <div class="flex items-center gap-3">
-                <div class="w-3 h-3 rounded-full bg-rose-500 shadow-sm shrink-0" />
-                <div>
-                  <div class="text-xs font-bold text-slate-800 dark:text-slate-200">紧急严重阈值</div>
-                  <p class="text-[11px] text-slate-400 mt-0.5">临近停服极度紧急</p>
+              <!-- 紧急严重 -->
+              <div class="flex items-center justify-between bg-white dark:bg-cardDark border border-slate-200/60 dark:border-slate-800 px-2.5 py-1.5 rounded-md">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-rose-500" />
+                  <span class="text-xs text-slate-700 dark:text-slate-300 font-medium">紧急严重天数</span>
                 </div>
+                <n-input-number
+                  v-model:value="settingStore.criticalDays"
+                  :min="0"
+                  :max="365"
+                  size="small"
+                  class="w-20 text-right"
+                >
+                  <template #suffix>天</template>
+                </n-input-number>
               </div>
-              <n-input-number
-                v-model:value="settingStore.criticalDays"
-                :min="0"
-                :max="365"
-                size="medium"
-                class="w-28 text-right"
-              >
-                <template #suffix>天</template>
-              </n-input-number>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 加载中占位 -->
-      <div v-else class="py-12 flex flex-col items-center justify-center text-slate-400 space-y-2">
-        <Icon icon="lucide:loader-2" class="animate-spin text-blue-500" :width="24" />
-        <span class="text-xs">正在加载告警凭据与配置...</span>
+      <div v-else class="py-8 flex flex-col items-center justify-center text-slate-400 space-y-1.5">
+        <Icon icon="lucide:loader-2" class="animate-spin text-blue-500" :width="20" />
+        <span class="text-xs">正在加载配置...</span>
       </div>
 
-      <!-- 底部操作与检测条 -->
-      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 gap-3">
-        <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-          <Icon icon="lucide:check-circle-2" :width="15" class="text-emerald-500" />
-          保存后自动加密落盘并触发一次即时连通性检测。
+      <!-- 底部紧凑操作条 -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between px-4 py-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-900/20 gap-2.5">
+        <span class="text-[11px] text-slate-400 flex items-center gap-1.5">
+          <Icon icon="lucide:shield-check" :width="13" class="text-emerald-500" />
+          保存后自动加密落盘并触发连通性校验
         </span>
-        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
-          <n-button size="medium" secondary :loading="testing" @click="testDomainAlert">
-            <template #icon><Icon icon="lucide:send" /></template>
-            发送测试消息
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <n-button size="small" secondary :loading="testing" @click="testDomainAlert">
+            <template #icon><Icon icon="lucide:send" :width="13" /></template>
+            发送测试
           </n-button>
-          <n-button size="medium" type="primary" :loading="saving" @click="saveDomainAlert">
-            <template #icon><Icon icon="lucide:save" /></template>
+          <n-button size="small" type="primary" :loading="saving" @click="saveDomainAlert">
+            <template #icon><Icon icon="lucide:save" :width="13" /></template>
             保存配置
           </n-button>
         </div>
       </div>
     </div>
 
-    <!-- 底部双列全宽卡片 (同步周期 + 外观偏好) -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- 底部双列紧凑卡片 (同步周期 + 外观偏好) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
       <!-- 自动同步设置 (基于各个账号配置) -->
-      <div class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+      <div class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
         <div>
-          <div class="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div class="w-7 h-7 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-              <Icon icon="lucide:refresh-cw" :width="15" />
+          <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div class="flex items-center gap-2">
+              <div class="w-6 h-6 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                <Icon icon="lucide:refresh-cw" :width="13" />
+              </div>
+              <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200">云账号数据同步周期</h3>
             </div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">云账号数据同步周期</h3>
-              <p class="text-xs text-slate-400">配置各个云账号后台自动拉取的调度频率</p>
-            </div>
+            <span class="text-[10.5px] text-slate-400">推荐每周一 03:00</span>
           </div>
 
-          <div class="mt-4 space-y-2.5 max-h-[220px] overflow-y-auto pr-1 custom-scroll">
+          <div class="mt-2.5 space-y-2 max-h-[170px] overflow-y-auto pr-1 custom-scroll">
             <div
               v-for="acc in accountStore.accounts"
               :key="acc.id"
-              class="flex justify-between items-center bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 px-4 py-2.5 rounded-lg"
+              class="flex justify-between items-center bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 px-3 py-2 rounded-lg"
             >
-              <div class="flex items-center gap-2">
-                <Icon icon="lucide:user" :width="14" class="text-slate-400" />
-                <span class="text-xs font-bold text-slate-800 dark:text-slate-200">{{ acc.account_alias }}</span>
+              <div class="flex items-center gap-2 truncate mr-2">
+                <Icon icon="lucide:user" :width="13" class="text-slate-400 shrink-0" />
+                <span class="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{{ acc.account_alias }}</span>
               </div>
               <n-select
                 v-model:value="acc.sync_interval"
                 :options="intervalOptions"
                 size="small"
-                style="width: 170px"
+                style="width: 155px"
                 @update:value="(val: any) => handleIntervalChange(acc.id, val)"
               />
             </div>
-            <div v-if="accountStore.accounts.length === 0" class="py-8 text-center text-xs text-slate-400">
+            <div v-if="accountStore.accounts.length === 0" class="py-6 text-center text-xs text-slate-400">
               暂无已配置云账号
             </div>
           </div>
         </div>
 
-        <p class="text-xs text-slate-400 dark:text-slate-500 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-          💡 生产环境推荐「每周一凌晨同步」，大幅降低 96% 阿里云 API 调用消耗。
+        <p class="text-[11px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
+          💡 后台异步队列平滑执行，账号间缓冲 1.5s，降低 96% API 消耗。
         </p>
       </div>
 
       <!-- 界面主题配置 & 系统信息 -->
-      <div class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-5 shadow-sm space-y-4 flex flex-col justify-between">
+      <div class="bg-white dark:bg-cardDark border border-slate-200/80 dark:border-slate-700/70 rounded-xl p-4 shadow-sm space-y-3 flex flex-col justify-between">
         <div>
-          <div class="flex items-center gap-2.5 border-b border-slate-100 dark:border-slate-800 pb-3">
-            <div class="w-7 h-7 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
-              <Icon icon="lucide:palette" :width="15" />
+          <div class="flex items-center gap-2 border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div class="w-6 h-6 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <Icon icon="lucide:palette" :width="13" />
             </div>
-            <div>
-              <h3 class="text-sm font-bold text-slate-900 dark:text-slate-100">外观主题与系统信息</h3>
-              <p class="text-xs text-slate-400">切换显示主题及查看当前平台版本</p>
-            </div>
+            <h3 class="text-xs font-bold text-slate-800 dark:text-slate-200">外观主题与系统信息</h3>
           </div>
 
-          <div class="mt-4 space-y-4 text-xs">
-            <div class="flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 p-3.5 rounded-lg">
-              <span class="font-bold text-slate-800 dark:text-slate-200">系统外观风格</span>
-              <n-radio-group v-model:value="themeStore.theme" size="medium" @update:value="handleThemeChange">
+          <div class="mt-2.5 space-y-2 text-xs">
+            <div class="flex items-center justify-between bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 p-2.5 rounded-lg">
+              <span class="font-semibold text-slate-700 dark:text-slate-300">系统外观风格</span>
+              <n-radio-group v-model:value="themeStore.theme" size="small" @update:value="handleThemeChange">
                 <n-radio-button value="dark">
-                  <div class="flex items-center gap-1.5"><Icon icon="lucide:moon" :width="13" /> 深色模式</div>
+                  <div class="flex items-center gap-1"><Icon icon="lucide:moon" :width="12" /> 深色</div>
                 </n-radio-button>
                 <n-radio-button value="light">
-                  <div class="flex items-center gap-1.5"><Icon icon="lucide:sun" :width="13" /> 浅色模式</div>
+                  <div class="flex items-center gap-1"><Icon icon="lucide:sun" :width="12" /> 浅色</div>
                 </n-radio-button>
               </n-radio-group>
             </div>
 
-            <div class="bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 p-3.5 rounded-lg space-y-1.5">
-              <div class="flex justify-between items-center text-xs">
-                <span class="text-slate-400">系统内核版本</span>
-                <span class="font-bold font-mono text-slate-800 dark:text-slate-200">v2.1.0 Enterprise</span>
+            <div class="bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/60 dark:border-slate-800 p-2.5 rounded-lg space-y-1">
+              <div class="flex justify-between items-center text-[11px]">
+                <span class="text-slate-400">系统版本</span>
+                <span class="font-bold font-mono text-slate-700 dark:text-slate-200">v2.1.0 Enterprise</span>
               </div>
-              <div class="flex justify-between items-center text-xs pt-1.5 border-t border-slate-200/40 dark:border-slate-800">
-                <span class="text-slate-400">核心架构</span>
-                <span class="font-mono text-slate-700 dark:text-slate-300">FastAPI + Vue3 + APScheduler</span>
+              <div class="flex justify-between items-center text-[11px] pt-1 border-t border-slate-200/40 dark:border-slate-800">
+                <span class="text-slate-400">技术架构</span>
+                <span class="font-mono text-slate-600 dark:text-slate-300">FastAPI + Vue3 + APScheduler</span>
               </div>
             </div>
           </div>
         </div>
 
-        <p class="text-xs text-slate-400 dark:text-slate-500 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-          深浅双主题全面支持物理动效与视网膜高分屏自适应。
+        <p class="text-[11px] text-slate-400 dark:text-slate-500 pt-2 border-t border-slate-100 dark:border-slate-800">
+          深浅双主题支持物理按压微动效与视网膜高分屏。
         </p>
       </div>
     </div>
